@@ -59,10 +59,6 @@ pipeline {
                                         dir("html"){
                                             stash includes: '**', name: "HTML Documentation"
                                         }
-                                        dir("doctest"){
-                                            bat "copy output.txt sphinx-doctest-results-${env.GIT_COMMIT.substring(0,6)}.txt"
-                                            archiveArtifacts artifacts: "sphinx-doctest-results-${env.GIT_COMMIT.substring(0,6)}.txt", allowEmptyArchive: true
-                                        }
                                     }
                                 }
                                 publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
