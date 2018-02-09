@@ -1,0 +1,195 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<record xmlns="http://www.loc.gov/MARC21/slim" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <leader>03183cam a2200505I  4500</leader>
+  <controlfield tag="001">1099891</controlfield>
+  <controlfield tag="005">20171111225037.0</controlfield>
+  <controlfield tag="008">720602s1926    nyuab    b    000 0 eng  </controlfield>
+  <datafield tag="010" ind1=" " ind2=" ">
+    <subfield code="a">   26016324 </subfield>
+  </datafield>
+  <datafield tag="035" ind1=" " ind2=" ">
+    <subfield code="a">(OCoLC)ocm00323295</subfield>
+  </datafield>
+  <datafield tag="040" ind1=" " ind2=" ">
+    <subfield code="a">DLC</subfield>
+    <subfield code="b">eng</subfield>
+    <subfield code="c">OSU</subfield>
+    <subfield code="d">OCL</subfield>
+    <subfield code="d">SER</subfield>
+    <subfield code="d">OCL</subfield>
+    <subfield code="d">PGC</subfield>
+    <subfield code="d">OCL</subfield>
+    <subfield code="d">SYB</subfield>
+    <subfield code="d">OCL</subfield>
+    <subfield code="d">OCLCQ</subfield>
+    <subfield code="d">OCLCG</subfield>
+    <subfield code="d">WY@</subfield>
+    <subfield code="d">VVW</subfield>
+    <subfield code="d">UKMGB</subfield>
+    <subfield code="d">OCLCQ</subfield>
+    <subfield code="d">OCLCF</subfield>
+    <subfield code="d">OCLCO</subfield>
+    <subfield code="d">OCL</subfield>
+    <subfield code="d">CNUTO</subfield>
+    <subfield code="d">WLU</subfield>
+    <subfield code="d">MFM</subfield>
+    <subfield code="d">OCLCO</subfield>
+  </datafield>
+  <datafield tag="016" ind1="7" ind2=" ">
+    <subfield code="a">003038054</subfield>
+    <subfield code="2">Uk</subfield>
+  </datafield>
+  <datafield tag="019" ind1=" " ind2=" ">
+    <subfield code="a">977851235</subfield>
+  </datafield>
+  <datafield tag="043" ind1=" " ind2=" ">
+    <subfield code="a">n-us---</subfield>
+  </datafield>
+  <datafield tag="050" ind1="0" ind2="0">
+    <subfield code="a">E456</subfield>
+    <subfield code="b">.R18</subfield>
+  </datafield>
+  <datafield tag="050" ind1="0" ind2="4">
+    <subfield code="a">JK201</subfield>
+    <subfield code="b">.R3 1926</subfield>
+  </datafield>
+  <datafield tag="082" ind1="0" ind2="4">
+    <subfield code="a">973.7</subfield>
+    <subfield code="b">R18c</subfield>
+  </datafield>
+  <datafield tag="049" ind1=" " ind2=" ">
+    <subfield code="a">UIUU</subfield>
+  </datafield>
+  <datafield tag="100" ind1="1" ind2=" ">
+    <subfield code="a">Randall, J. G.</subfield>
+    <subfield code="q">(James Garfield),</subfield>
+    <subfield code="d">1881-1953.</subfield>
+  </datafield>
+  <datafield tag="245" ind1="1" ind2="0">
+    <subfield code="a">Constitutional problems under Lincoln,</subfield>
+    <subfield code="c">by James G. Randall ...</subfield>
+  </datafield>
+  <datafield tag="260" ind1=" " ind2=" ">
+    <subfield code="a">New York,</subfield>
+    <subfield code="a">London,</subfield>
+    <subfield code="b">D. Appleton and Co.,</subfield>
+    <subfield code="c">1926.</subfield>
+  </datafield>
+  <datafield tag="300" ind1=" " ind2=" ">
+    <subfield code="a">xviii pages, 1 leaf, 580 pages</subfield>
+    <subfield code="b">illustrations (map)</subfield>
+    <subfield code="c">22 cm</subfield>
+  </datafield>
+  <datafield tag="336" ind1=" " ind2=" ">
+    <subfield code="a">text</subfield>
+    <subfield code="b">txt</subfield>
+    <subfield code="2">rdacontent</subfield>
+  </datafield>
+  <datafield tag="337" ind1=" " ind2=" ">
+    <subfield code="a">unmediated</subfield>
+    <subfield code="b">n</subfield>
+    <subfield code="2">rdamedia</subfield>
+  </datafield>
+  <datafield tag="338" ind1=" " ind2=" ">
+    <subfield code="a">volume</subfield>
+    <subfield code="b">nc</subfield>
+    <subfield code="2">rdacarrier</subfield>
+  </datafield>
+  <datafield tag="504" ind1=" " ind2=" ">
+    <subfield code="a">Includes bibliographical references (pages 531-548).</subfield>
+  </datafield>
+  <datafield tag="505" ind1="0" ind2=" ">
+    <subfield code="a">The Constitution and the war powers -- The legal nature of the Civil War -- The law of treason -- The treatment of confederate leaders -- The power to suspend the habeas corpus privilege -- Military rule and arbitrary arrests -- Martial law and military commissions -- The Indemnity Act of 1863 -- The régime of conquest in occupied districts of the south -- Legal and constitutional bearings of conscription -- The policy of confiscation -- The right of confiscation -- Restoration of captured and confiscated property -- Steps toward emancipation -- Emancipation completed -- State and federal relations during the Civil War -- The partition of Virginia -- The relation of the government to the press -- Summary and conclusion.</subfield>
+  </datafield>
+  <datafield tag="583" ind1=" " ind2=" ">
+    <subfield code="a">commitment to retain</subfield>
+    <subfield code="c">20151208</subfield>
+    <subfield code="2">pda</subfield>
+    <subfield code="5">OTUTLD</subfield>
+  </datafield>
+  <datafield tag="583" ind1="1" ind2=" ">
+    <subfield code="a">committed to retain</subfield>
+    <subfield code="c">20160630</subfield>
+    <subfield code="d">20310630</subfield>
+    <subfield code="f">EAST</subfield>
+    <subfield code="u">http://eastlibraries.org/retained-materials</subfield>
+    <subfield code="5">CtW</subfield>
+    <subfield code="z">This title retained by Wesleyan University Library on behalf of the Eastern Academic Scholars Trust (EAST) print archive</subfield>
+  </datafield>
+  <datafield tag="600" ind1="1" ind2="0">
+    <subfield code="a">Lincoln, Abraham,</subfield>
+    <subfield code="d">1809-1865.</subfield>
+  </datafield>
+  <datafield tag="600" ind1="1" ind2="7">
+    <subfield code="a">Lincoln, Abraham,</subfield>
+    <subfield code="d">1809-1865.</subfield>
+    <subfield code="2">fast</subfield>
+    <subfield code="0">(OCoLC)fst00030184</subfield>
+  </datafield>
+  <datafield tag="651" ind1=" " ind2="0">
+    <subfield code="a">United States</subfield>
+    <subfield code="x">Politics and government</subfield>
+    <subfield code="y">1861-1865.</subfield>
+  </datafield>
+  <datafield tag="650" ind1=" " ind2="0">
+    <subfield code="a">Constitutional history</subfield>
+    <subfield code="z">United States.</subfield>
+  </datafield>
+  <datafield tag="650" ind1=" " ind2="0">
+    <subfield code="a">Constitutional law</subfield>
+    <subfield code="z">United States.</subfield>
+  </datafield>
+  <datafield tag="650" ind1=" " ind2="7">
+    <subfield code="a">Constitutional history.</subfield>
+    <subfield code="2">fast</subfield>
+    <subfield code="0">(OCoLC)fst00875777</subfield>
+  </datafield>
+  <datafield tag="650" ind1=" " ind2="7">
+    <subfield code="a">Constitutional law.</subfield>
+    <subfield code="2">fast</subfield>
+    <subfield code="0">(OCoLC)fst00875797</subfield>
+  </datafield>
+  <datafield tag="650" ind1=" " ind2="7">
+    <subfield code="a">Politics and government</subfield>
+    <subfield code="2">fast</subfield>
+    <subfield code="0">(OCoLC)fst01919741</subfield>
+  </datafield>
+  <datafield tag="651" ind1=" " ind2="7">
+    <subfield code="a">United States.</subfield>
+    <subfield code="2">fast</subfield>
+    <subfield code="0">(OCoLC)fst01204155</subfield>
+  </datafield>
+  <datafield tag="648" ind1=" " ind2="7">
+    <subfield code="a">1861-1865</subfield>
+    <subfield code="2">fast</subfield>
+  </datafield>
+  <datafield tag="710" ind1="2" ind2=" ">
+    <subfield code="a">Frank and Virginia Williams Collection of Lincolniana (Mississippi State University. Libraries)</subfield>
+    <subfield code="5">MsSM</subfield>
+  </datafield>
+  <datafield tag="776" ind1="0" ind2="8">
+    <subfield code="i">Online version:</subfield>
+    <subfield code="a">Randall, J.G. (James Garfield), 1881-1953.</subfield>
+    <subfield code="t">Constitutional problems under Lincoln.</subfield>
+    <subfield code="d">New York, London, D. Appleton and Co., 1926</subfield>
+    <subfield code="w">(OCoLC)665197943</subfield>
+  </datafield>
+  <datafield tag="856" ind1="4" ind2="0">
+    <subfield code="3">Full text - UIUC</subfield>
+    <subfield code="u">http://hdl.handle.net/10111/UIUCOCA:constitutionalpr00randa</subfield>
+  </datafield>
+  <datafield tag="856" ind1="4" ind2="0">
+    <subfield code="3">Full text - OCA</subfield>
+    <subfield code="u">http://www.archive.org/details/constitutionalpr00randa</subfield>
+  </datafield>
+  <datafield tag="945" ind1=" " ind2=" ">
+    <subfield code="a">Master record variable field(s) change: 710</subfield>
+    <subfield code="b">11/10/2017</subfield>
+  </datafield>
+  <datafield tag="994" ind1=" " ind2=" ">
+    <subfield code="a">92</subfield>
+    <subfield code="b">UIU</subfield>
+  </datafield>
+</record>
+<?query @attr 1=12 "1099891" ?>
+<?count 1 ?>
