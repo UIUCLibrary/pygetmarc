@@ -81,6 +81,7 @@ pipeline {
                         node(label: "Windows"){
                             checkout scm
                             bat "call make.bat install-dev"
+                            bat "venv\\Scripts\\pip.exe install pytest-cov"
                             bat "venv\\Scripts\\pytest.exe -m integration --junitxml=reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/coverage/ --cov=uiucprescon"
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
                         }
