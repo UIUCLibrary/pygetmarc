@@ -1,1 +1,1 @@
-from . import request
+from .request import get_marc

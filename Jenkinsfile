@@ -6,6 +6,9 @@ pipeline {
     agent {
         label "Windows&&DevPi"
     }
+    options {
+        disableConcurrentBuilds()  //each branch has 1 job running at a time
+    }
     parameters {
         string(name: "PROJECT_NAME", defaultValue: "pyGetMarc", description: "Name given to the project")
         booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
@@ -46,34 +49,43 @@ pipeline {
 
             steps {
                 parallel(
-                        "Documentation": {
-                            node(label: "Windows") {
-                                checkout scm
-                                bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
-                                script{
-                                    // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                                    def alljob = env.JOB_NAME.tokenize("/") as String[]
-                                    def project_name = alljob[0]
-                                    dir('.tox/dist') {
-                                        zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
-                                        dir("html"){
-                                            stash includes: '**', name: "HTML Documentation"
-                                        }
+                    "Documentation": {
+                        node(label: "Windows") {
+                            checkout scm
+                            bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
+                            script{
+                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+                                def alljob = env.JOB_NAME.tokenize("/") as String[]
+                                def project_name = alljob[0]
+                                dir('.tox/dist') {
+                                    zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
+                                    dir("html"){
+                                        stash includes: '**', name: "HTML Documentation"
                                     }
                                 }
-                                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                             }
-                        },
-                        "MyPy": {
-                     
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                        }
+                    },
+                    "MyPy": {
+                    
                         node(label: "Windows") {
                             checkout scm
                             bat "call make.bat install-dev"
                             bat "venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report reports/mypy_html"
                             junit "junit-${env.NODE_NAME}-mypy.xml"
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
-                         }
+                        }
                     },
+                    "Integration": {
+                        node(label: "Windows"){
+                            checkout scm
+                            bat "call make.bat install-dev"
+                            bat "venv\\Scripts\\pip.exe install pytest-cov"
+                            bat "venv\\Scripts\\pytest.exe -m integration --junitxml=reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/coverage/ --cov=uiucprescon"
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+                        }
+                    }
                 )
             }
         }
@@ -102,7 +114,7 @@ pipeline {
 
         stage("Deploying to Devpi") {
             when {
-                expression { params.DEPLOY_DEVPI == true }
+                expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") }
             }
             steps {
                 bat "${tool 'Python3.6.3_Win64'} -m devpi use http://devpy.library.illinois.edu"
@@ -123,7 +135,7 @@ pipeline {
         }
         stage("Test Devpi packages") {
             when {
-                expression { params.DEPLOY_DEVPI == true }
+                expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") }
             }
             steps {
                 parallel(

@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<record xmlns="http://www.loc.gov/MARC21/slim" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+﻿<record xmlns="http://www.loc.gov/MARC21/slim" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <leader>03183cam a2200505I  4500</leader>
   <controlfield tag="001">1099891</controlfield>
   <controlfield tag="005">20171111225037.0</controlfield>
@@ -191,5 +190,3 @@
     <subfield code="b">UIU</subfield>
   </datafield>
 </record>
-<?query @attr 1=12 "1099891" ?>
-<?count 1 ?>
