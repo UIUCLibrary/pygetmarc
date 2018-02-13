@@ -15,6 +15,6 @@ def get_sample_record(bib_id):
 ])
 def test_get_marc(bib_id, validate):
     expected_marc_data = get_sample_record(bib_id)
-    marc_record = pygetmarc.request.get_marc(bib_id, validate)
+    marc_record = pygetmarc.get_marc(bib_id, validate)
     assert expected_marc_data == marc_record
 
