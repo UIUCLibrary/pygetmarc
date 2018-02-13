@@ -1,14 +1,19 @@
-.PHONY: clean docs build
+.PHONY: clean docs build sdist wheel
 PYTHON := python3
+
 build: venv
-	@source venv/bin/activate && python setup.py sdist
+	venv/bin/python setup.py build
 
 wheel: venv
-	@source venv/bin/activate && python setup.py bdist_wheel
+	venv/bin/python setup.py bdist_wheel
+
+sdist: venv
+	venv/bin/python setup.py sdist
 
 venv:
 	$(PYTHON) -m venv venv
-	@source venv/bin/activate && pip install -r requirements-dev.txt
+	venv/bin/python -m pip install -r requirements.txt
+	venv/bin/python -m pip install -r requirements-dev.txt
 
 clean:
 	@$(PYTHON) setup.py clean
@@ -20,8 +25,14 @@ clean:
 	@echo "removing '.eggs'"
 	@rm -rf .eggs
 
-	@echo "removing 'pygetmarc.egg-info'"
-	@rm -rf pygetmarc.egg-info
+	@echo "removing 'uiucprescon_getmarc.egg-info'"
+	@rm -rf uiucprescon_getmarc.egg-info
+
+	@echo "removing '.mypy_cache'"
+	@rm -rf .mypy_cache
+
+	@echo "removing '.pytest_cache'"
+	@rm -rf .pytest_cache
 
 
 docs: venv
