@@ -8,9 +8,7 @@ def get_sample_record(bib_id):
         expected_marc_data = marc_file.read()
     return expected_marc_data.strip()
 
-# TODO: Mark these as integration tests.
-# These tests are really more integration tests because they required outside connection and should be split off into
-# it's own test.
+@pytest.mark.intergration
 @pytest.mark.parametrize("bib_id,validate", [
     (1099891, False),
     (1099891, True),
@@ -21,11 +19,33 @@ def test_get_marc(bib_id, validate):
     assert expected_marc_data == marc_record
 
 
+@pytest.mark.intergration
 def test_get_marc_bad():
     with pytest.raises(ValueError):
-        try:
-            marc_record = pygetmarc.get_marc(0)
-        except ValueError as e:
-            print(e)
-            raise
-    # assert expected_marc_data == marc_record
+        marc_record = pygetmarc.get_marc(0)
+
+
+def test_clean_data():
+    """Remove any Processing Instruction"""
+    data = '<record xmlns="http://www.loc.gov/MARC21/slim" ' \
+           'xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd" ' \
+           'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' \
+           '\n  <leader>03183cam a2200505I  4500</leader>' \
+           '\n  <controlfield tag="001">1099891</controlfield>' \
+           '\n  <controlfield tag="005">20171111225037.0</controlfield>' \
+           '\n  <controlfield tag="008">720602s1926    nyuab    b    000 0 eng  </controlfield>' \
+           '\n</record>' \
+           '\n<?query @attr 1=12 "1099891" ?>' \
+           '\n<?count 1 ?>'
+
+    cleaned_up_data = pygetmarc.request.clean_up(data)
+
+    assert cleaned_up_data == \
+               '<record xmlns="http://www.loc.gov/MARC21/slim" ' \
+               'xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd" ' \
+               'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' \
+               '\n  <leader>03183cam a2200505I  4500</leader>' \
+               '\n  <controlfield tag="001">1099891</controlfield>' \
+               '\n  <controlfield tag="005">20171111225037.0</controlfield>' \
+               '\n  <controlfield tag="008">720602s1926    nyuab    b    000 0 eng  </controlfield>' \
+               '\n</record>'
