@@ -77,7 +77,7 @@ pipeline {
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
                         }
                     },
-                    "integration": {
+                    "Integration": {
                         node(label: "Windows"){
                             checkout scm
                             bat "call make.bat install-dev"
