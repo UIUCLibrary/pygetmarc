@@ -18,3 +18,12 @@ def test_get_marc(bib_id, validate):
     marc_record = pygetmarc.get_marc(bib_id, validate)
     assert expected_marc_data == marc_record
 
+
+def test_get_marc_bad():
+    with pytest.raises(ValueError):
+        try:
+            marc_record = pygetmarc.get_marc(0)
+        except ValueError as e:
+            print(e)
+            raise
+    # assert expected_marc_data == marc_record
