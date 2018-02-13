@@ -8,7 +8,9 @@ def get_sample_record(bib_id):
         expected_marc_data = marc_file.read()
     return expected_marc_data.strip()
 
-
+# TODO: Mark these as integration tests.
+# These tests are really more integration tests because they required outside connection and should be split off into
+# it's own test.
 @pytest.mark.parametrize("bib_id,validate", [
     (1099891, False),
     (1099891, True),
