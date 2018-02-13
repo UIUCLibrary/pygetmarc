@@ -19,6 +19,7 @@ goto :error %*
 
 EXIT /B 0
 
+
 :: ============================================================================
 ::  Display help information about available options
 :: ============================================================================
@@ -56,6 +57,7 @@ goto :eof
     call venv\Scripts\pip.exe install -r requirements.txt --upgrade-strategy only-if-needed
     endlocal
 goto:eof
+
 
 :: ============================================================================
 ::  Install development requirements
@@ -105,6 +107,7 @@ goto :eof
     endlocal
 goto :eof
 
+
 :: ============================================================================
 ::  Create a wheel distribution
 :: ============================================================================
@@ -126,6 +129,7 @@ goto :eof
     endlocal
 goto :eof
 
+
 :: ============================================================================
 ::  Run unit tests
 :: ============================================================================
@@ -146,6 +150,8 @@ goto :eof
     venv\Scripts\mypy.exe -p uiucprescon %*
     endlocal
 goto :eof
+
+
 :: ============================================================================
 ::  Build html documentation
 :: ============================================================================
@@ -156,6 +162,7 @@ goto :eof
     venv\Scripts\python.exe setup.py build_sphinx %*
     endlocal
 goto :eof
+
 
 :: ============================================================================
 ::  Clean up any generated files
