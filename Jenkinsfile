@@ -49,35 +49,35 @@ pipeline {
 
             steps {
                 parallel(
-                        "Documentation": {
-                            node(label: "Windows") {
-                                checkout scm
-                                bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
-                                script{
-                                    // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                                    def alljob = env.JOB_NAME.tokenize("/") as String[]
-                                    def project_name = alljob[0]
-                                    dir('.tox/dist') {
-                                        zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
-                                        dir("html"){
-                                            stash includes: '**', name: "HTML Documentation"
-                                        }
+                    "Documentation": {
+                        node(label: "Windows") {
+                            checkout scm
+                            bat "${tool 'Python3.6.3_Win64'} -m tox -e docs"
+                            script{
+                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+                                def alljob = env.JOB_NAME.tokenize("/") as String[]
+                                def project_name = alljob[0]
+                                dir('.tox/dist') {
+                                    zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
+                                    dir("html"){
+                                        stash includes: '**', name: "HTML Documentation"
                                     }
                                 }
-                                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                             }
-                        },
-                        "MyPy": {
-                     
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                        }
+                    },
+                    "MyPy": {
+                    
                         node(label: "Windows") {
                             checkout scm
                             bat "call make.bat install-dev"
                             bat "venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report reports/mypy_html"
                             junit "junit-${env.NODE_NAME}-mypy.xml"
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
-                         }
+                        }
                     },
-                    "integration" {
+                    "integration": {
                         node(label: "Windows"){
                             checkout scm
                             bat "call make.bat install-dev"
