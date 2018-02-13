@@ -8,7 +8,7 @@ def get_sample_record(bib_id):
         expected_marc_data = marc_file.read()
     return expected_marc_data.strip()
 
-@pytest.mark.intergration
+@pytest.mark.integration
 @pytest.mark.parametrize("bib_id,validate", [
     (1099891, False),
     (1099891, True),
@@ -19,7 +19,7 @@ def test_get_marc(bib_id, validate):
     assert expected_marc_data == marc_record
 
 
-@pytest.mark.intergration
+@pytest.mark.integration
 def test_get_marc_bad():
     with pytest.raises(ValueError):
         marc_record = pygetmarc.get_marc(0)
