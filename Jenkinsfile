@@ -204,8 +204,10 @@ pipeline {
                     }
 
                 }
-                node("Linux"){
-                    updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
+            }
+            post {
+                success {
+                    build job: 'speedwagon/master', parameters: [string(nama: 'PROJECT_NAME', value: 'Speedwagon'), booleanParam(name: 'UPDATE_JIRA_EPIC', value: false), string(name: 'JIRA_ISSUE', value: 'PSR-83'), booleanParam(name: 'TEST_RUN_PYTEST', value: true), booleanParam(name: 'TEST_RUN_BEHAVE', value: true), booleanParam(name: 'TEST_RUN_DOCTEST', value: true), booleanParam(name: 'TEST_RUN_FLAKE8', value: true), booleanParam(name: 'TEST_RUN_MYPY', value: true), booleanParam(name: 'PACKAGE_PYTHON_FORMATS', value: true), booleanParam(name: 'PACKAGE_WINDOWS_STANDALONE', value: true), booleanParam(name: 'DEPLOY_DEVPI', value: true), string(name: 'RELEASE', value: 'None'), booleanParam(name: 'UPDATE_DOCS', value: false), string(name: 'URL_SUBFOLDER', value: 'speedwagon')], wait: false
                 }
             }
         }
@@ -220,6 +222,11 @@ pipeline {
             steps {
                 updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
             }
+        }
+    }
+    post {
+        success {
+            build job: 'speedwagon/master', parameters: [string(nama: 'PROJECT_NAME', value: 'Speedwagon'), booleanParam(name: 'UPDATE_JIRA_EPIC', value: false), string(name: 'JIRA_ISSUE', value: 'PSR-83'), booleanParam(name: 'TEST_RUN_PYTEST', value: true), booleanParam(name: 'TEST_RUN_BEHAVE', value: true), booleanParam(name: 'TEST_RUN_DOCTEST', value: true), booleanParam(name: 'TEST_RUN_FLAKE8', value: true), booleanParam(name: 'TEST_RUN_MYPY', value: true), booleanParam(name: 'PACKAGE_PYTHON_FORMATS', value: true), booleanParam(name: 'PACKAGE_WINDOWS_STANDALONE', value: true), booleanParam(name: 'DEPLOY_DEVPI', value: true), string(name: 'RELEASE', value: 'None'), booleanParam(name: 'UPDATE_DOCS', value: false), string(name: 'URL_SUBFOLDER', value: 'speedwagon')], wait: false
         }
     }
 }
