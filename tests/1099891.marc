@@ -1,7 +1,7 @@
 ﻿<record xmlns="http://www.loc.gov/MARC21/slim" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <leader>03183cam a2200505I  4500</leader>
+  <leader>03366cam a2200529I  4500</leader>
   <controlfield tag="001">1099891</controlfield>
-  <controlfield tag="005">20171111225037.0</controlfield>
+  <controlfield tag="005">20180520155231.0</controlfield>
   <controlfield tag="008">720602s1926    nyuab    b    000 0 eng  </controlfield>
   <datafield tag="010" ind1=" " ind2=" ">
     <subfield code="a">   26016324 </subfield>
@@ -32,6 +32,11 @@
     <subfield code="d">CNUTO</subfield>
     <subfield code="d">WLU</subfield>
     <subfield code="d">MFM</subfield>
+    <subfield code="d">OCLCO</subfield>
+    <subfield code="d">MSL</subfield>
+    <subfield code="d">WIH</subfield>
+    <subfield code="d">EZC</subfield>
+    <subfield code="d">OCLCQ</subfield>
     <subfield code="d">OCLCO</subfield>
   </datafield>
   <datafield tag="016" ind1="7" ind2=" ">
@@ -180,6 +185,14 @@
   <datafield tag="856" ind1="4" ind2="0">
     <subfield code="3">Full text - OCA</subfield>
     <subfield code="u">http://www.archive.org/details/constitutionalpr00randa</subfield>
+  </datafield>
+  <datafield tag="945" ind1=" " ind2=" ">
+    <subfield code="a">Master record variable field(s) change: 300, 880</subfield>
+    <subfield code="b">05/18/2018</subfield>
+  </datafield>
+  <datafield tag="945" ind1=" " ind2=" ">
+    <subfield code="a">Master record variable field(s) change: 300, 880</subfield>
+    <subfield code="b">04/27/2018</subfield>
   </datafield>
   <datafield tag="945" ind1=" " ind2=" ">
     <subfield code="a">Master record variable field(s) change: 710</subfield>
