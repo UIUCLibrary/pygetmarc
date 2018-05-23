@@ -59,7 +59,7 @@ pipeline {
                     echo "Cleaned out build directory"
                     bat "dir"
                 }
-                dir("reports"){
+                dir("${pwd tmp: true}/reports"){
                     deleteDir()
                     echo "Cleaned out reports directory"
                     bat "dir"
@@ -238,7 +238,8 @@ pipeline {
                         dir("source"){
                             // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
-                            bat "move build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
+                        }
+                            bat "move build\\docs\\output.txt ${pwd tmp: true}\\reports\\doctest.txt"
                             // script{
                             //     // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
                             //     def alljob = env.JOB_NAME.tokenize("/") as String[]
@@ -251,8 +252,8 @@ pipeline {
                             //     }
                             // }
                             // publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        }
-                        archiveArtifacts artifacts: 'reports/doctest.txt'
+                        
+                        archiveArtifacts artifacts: "${pwd tmp: true}/reports/doctest.txt"
                         // }
                     },
                     "MyPy": {
