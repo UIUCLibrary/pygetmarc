@@ -289,31 +289,45 @@ pipeline {
             }
         }
         stage("Packaging") {
-            when {
-                expression { params.PACKAGE == true }
-            }
-
             steps {
-                parallel(
-                        "Source and Wheel formats": {
-                            dir("source"){
-                                bat "call make.bat"
-                            }
-                        },
-                )
-            }
-            post {
-              success {
-                  dir("source"){
-                    dir("dist"){
-                        archiveArtifacts artifacts: "*.whl", fingerprint: true
-                        archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
-                    }
+                dir("source"){
+                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
                 }
-              }
-            }
 
+                dir("dist") {
+                    archiveArtifacts artifacts: "*.whl", fingerprint: true
+                    archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+                }
+            }
         }
+        // stag
+        // stage("Packaging") {
+        //     when {
+        //         expression { params.PACKAGE == true }
+        //     }
+            
+
+        //     // steps {
+        //     //     parallel(
+        //     //             "Source and Wheel formats": {
+        //     //                 dir("source"){
+        //     //                     bat "call make.bat"
+        //     //                 }
+        //     //             },
+        //     //     )
+        //     // }
+        //     post {
+        //       success {
+        //           dir("source"){
+        //             dir("dist"){
+        //                 archiveArtifacts artifacts: "*.whl", fingerprint: true
+        //                 archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+        //             }
+        //         }
+        //       }
+        //     }
+
+        // }
 
         stage("Deploying to Devpi") {
             when {
