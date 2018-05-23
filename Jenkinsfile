@@ -308,6 +308,7 @@ Report Directory   = ${reports_dir}
                 dir("dist") {
                     archiveArtifacts artifacts: "*.whl", fingerprint: true
                     archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+                    archiveArtifacts artifacts: "*.zip", fingerprint: true
                 }
             }
         }
@@ -359,100 +360,301 @@ Report Directory   = ${reports_dir}
 
             // }
         }
-        stage("Test Devpi packages") {
+        // stage("Test Devpi packages") {
+        //     when {
+        //         expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") }
+        //     }
+        //     steps {
+        //         parallel(
+        //                 "Source": {
+        //                     script {
+        //                         // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+        //                         // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+        //                         node("Windows") {
+        //                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+        //                                 bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+        //                                 bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+        //                                 echo "Testing Source package in devpi"
+        //                                 bat "${tool 'CPython-3.6'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s tar.gz"
+        //                             }
+        //                         }
+
+        //                     }
+        //                 },
+        //                 "Wheel": {
+        //                     script {
+        //                         // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+        //                         // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+        //                         node("Windows") {
+        //                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+        //                                 bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+        //                                 bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+        //                                 echo "Testing Whl package in devpi"
+        //                                 bat " ${tool 'CPython-3.6'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s whl"
+        //                             }
+        //                         }
+
+        //                     }
+        //                 }
+        //         )
+
+        //     }
+        //     post {
+        //         success {
+        //             echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
+        //             script {
+        //                 // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+        //                 // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+        //                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+        //                     bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+        //                     bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+        //                     bat "${tool 'CPython-3.6'} -m devpi push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+        //                 }
+
+        //             }
+        //         }
+        //     }
+        // }
+        stage("Test DevPi packages") {
             when {
-                expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") }
+                allOf{
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    anyOf {
+                        equals expected: "master", actual: env.BRANCH_NAME
+                        equals expected: "dev", actual: env.BRANCH_NAME
+                    }
+                }
             }
-            steps {
-                parallel(
-                        "Source": {
-                            script {
-                                // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                                // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-                                node("Windows") {
-                                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                        bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                        bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                        echo "Testing Source package in devpi"
-                                        bat "${tool 'CPython-3.6'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s tar.gz"
-                                    }
-                                }
 
-                            }
-                        },
-                        "Wheel": {
-                            script {
-                                // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                                // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-                                node("Windows") {
-                                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                        bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                                        bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                                        echo "Testing Whl package in devpi"
-                                        bat " ${tool 'CPython-3.6'} -m devpi test --index http://devpy.library.illinois.edu/${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging ${name} -s whl"
-                                    }
-                                }
 
-                            }
+            parallel {
+                stage("Source Distribution: .tar.gz") {
+                    environment {
+                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+                    }
+                    steps {
+                        echo "Testing Source tar.gz package in devpi"
+                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    
                         }
-                )
+                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
 
+                        script {                          
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
+                            echo "return code was ${devpi_test_return_code}"
+                        }
+                        echo "Finished testing Source Distribution: .tar.gz"
+                    }
+                    post {
+                        failure {
+                            echo "Tests for .tar.gz source on DevPi failed."
+                        }
+                    }
+
+                }
+                stage("Source Distribution: .zip") {
+                    environment {
+                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
+                    }
+                    steps {
+                        echo "Testing Source zip package in devpi"
+                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                        }
+                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        script {
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
+                            echo "return code was ${devpi_test_return_code}"
+                        }
+                        echo "Finished testing Source Distribution: .zip"
+                    }
+                    post {
+                        failure {
+                            echo "Tests for .zip source on DevPi failed."
+                        }
+                    }
+                }
+                stage("Built Distribution: .whl") {
+                    agent {
+                        node {
+                            label "Windows && Python3"
+                        }
+                    }
+                    options {
+                        skipDefaultCheckout(true)
+                    }
+                    steps {
+                        echo "Testing Whl package in devpi"
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
+                        }
+                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        script{
+                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
+                            echo "return code was ${devpi_test_return_code}"
+                        }
+                        echo "Finished testing Built Distribution: .whl"
+                    }
+                    post {
+                        failure {
+                            echo "Tests for whl on DevPi failed."
+                        }
+                    }
+                }
             }
             post {
                 success {
-                    echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
+                    echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
-                        // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                        // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "${tool 'CPython-3.6'} -m devpi push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
                 }
-            }
-        }
-        stage("Release to DevPi production") {
-            when {
-                expression { params.RELEASE != "None" && env.BRANCH_NAME == "master" }
-            }
-
-            steps {
-                script {
-                    // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                    // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                        bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                        bat "${tool 'CPython-3.6'} -m devpi push ${name}==${version} production/release"
-                    }
-
+                failure {
+                    echo "At least one package format on DevPi failed."
                 }
             }
-            // post {
-            //     success {
-            //         build job: 'speedwagon/master', parameters: [string(nama: 'PROJECT_NAME', value: 'Speedwagon'), booleanParam(name: 'UPDATE_JIRA_EPIC', value: false), string(name: 'JIRA_ISSUE', value: 'PSR-83'), booleanParam(name: 'TEST_RUN_PYTEST', value: true), booleanParam(name: 'TEST_RUN_BEHAVE', value: true), booleanParam(name: 'TEST_RUN_DOCTEST', value: true), booleanParam(name: 'TEST_RUN_FLAKE8', value: true), booleanParam(name: 'TEST_RUN_MYPY', value: true), booleanParam(name: 'PACKAGE_PYTHON_FORMATS', value: true), booleanParam(name: 'PACKAGE_WINDOWS_STANDALONE', value: true), booleanParam(name: 'DEPLOY_DEVPI', value: true), string(name: 'RELEASE', value: 'None'), booleanParam(name: 'UPDATE_DOCS', value: false), string(name: 'URL_SUBFOLDER', value: 'speedwagon')], wait: false
-            //     }
-            // }
         }
-        stage("Update online documentation") {
-            agent {
-                label "Linux"
-            }
-            when {
-              expression {params.UPDATE_DOCS == true }
-            }
+        stage("Deploy"){
+            parallel {
+                stage("Deploy Online Documentation") {
+                    when{
+                        equals expected: true, actual: params.DEPLOY_DOCS
+                    }
+                    steps{
+                        script {
+                            if(!params.BUILD_DOCS){
+                                bat "pipenv run python setup.py build_sphinx"
+                            }
+                        }
+                        
+                        dir("build/docs/html/"){
+                            input 'Update project documentation?'
+                            sshPublisher(
+                                publishers: [
+                                    sshPublisherDesc(
+                                        configName: 'apache-ns - lib-dccuser-updater', 
+                                        sshLabel: [label: 'Linux'], 
+                                        transfers: [sshTransfer(excludes: '', 
+                                        execCommand: '', 
+                                        execTimeout: 120000, 
+                                        flatten: false, 
+                                        makeEmptyDirs: false, 
+                                        noDefaultExcludes: false, 
+                                        patternSeparator: '[, ]+', 
+                                        remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}", 
+                                        remoteDirectorySDF: false, 
+                                        removePrefix: '', 
+                                        sourceFiles: '**')], 
+                                    usePromotionTimestamp: false, 
+                                    useWorkspaceInPromotion: false, 
+                                    verbose: true
+                                    )
+                                ]
+                            )
+                        }
+                    }
+                }
+                stage("Deploy to DevPi Production") {
+                    when {
+                        allOf{
+                            equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                            equals expected: true, actual: params.DEPLOY_DEVPI
+                            branch "master"
+                        }
+                    }
+                    steps {
+                        script {
+                            input "Release ${name} ${version} to DevPi Production?"
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
+                            }
 
-            steps {
-                updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
+                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} production/release"
+
+                            // withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            //     bat "devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            //     bat "devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            //     bat "devpi push ${name}==${version} production/release"
+                            // }
+                        }
+                    }
+                }
             }
         }
+        // stage("Release to DevPi production") {
+        //     when {
+        //         expression { params.RELEASE != "None" && env.BRANCH_NAME == "master" }
+        //     }
+
+        //     steps {
+        //         script {
+        //             // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+        //             // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+        //             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+        //                 bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+        //                 bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+        //                 bat "${tool 'CPython-3.6'} -m devpi push ${name}==${version} production/release"
+        //             }
+
+        //         }
+        //     }
+        //     // post {
+        //     //     success {
+        //     //         build job: 'speedwagon/master', parameters: [string(nama: 'PROJECT_NAME', value: 'Speedwagon'), booleanParam(name: 'UPDATE_JIRA_EPIC', value: false), string(name: 'JIRA_ISSUE', value: 'PSR-83'), booleanParam(name: 'TEST_RUN_PYTEST', value: true), booleanParam(name: 'TEST_RUN_BEHAVE', value: true), booleanParam(name: 'TEST_RUN_DOCTEST', value: true), booleanParam(name: 'TEST_RUN_FLAKE8', value: true), booleanParam(name: 'TEST_RUN_MYPY', value: true), booleanParam(name: 'PACKAGE_PYTHON_FORMATS', value: true), booleanParam(name: 'PACKAGE_WINDOWS_STANDALONE', value: true), booleanParam(name: 'DEPLOY_DEVPI', value: true), string(name: 'RELEASE', value: 'None'), booleanParam(name: 'UPDATE_DOCS', value: false), string(name: 'URL_SUBFOLDER', value: 'speedwagon')], wait: false
+        //     //     }
+        //     // }
+        // }
+        // stage("Update online documentation") {
+        //     agent {
+        //         label "Linux"
+        //     }
+        //     when {
+        //       expression {params.UPDATE_DOCS == true }
+        //     }
+
+        //     steps {
+        //         updateOnlineDocs url_subdomain: params.URL_SUBFOLDER, stash_name: "HTML Documentation"
+        //     }
+        // }
     }
     post {
-        success {
-            build job: 'speedwagon/master', parameters: [string(nama: 'PROJECT_NAME', value: 'Speedwagon'), booleanParam(name: 'UPDATE_JIRA_EPIC', value: false), string(name: 'JIRA_ISSUE', value: 'PSR-83'), booleanParam(name: 'TEST_RUN_PYTEST', value: true), booleanParam(name: 'TEST_RUN_BEHAVE', value: true), booleanParam(name: 'TEST_RUN_DOCTEST', value: true), booleanParam(name: 'TEST_RUN_FLAKE8', value: true), booleanParam(name: 'TEST_RUN_MYPY', value: true), booleanParam(name: 'PACKAGE_PYTHON_FORMATS', value: true), booleanParam(name: 'PACKAGE_WINDOWS_STANDALONE', value: true), booleanParam(name: 'DEPLOY_DEVPI', value: true), string(name: 'RELEASE', value: 'None'), booleanParam(name: 'UPDATE_DOCS', value: false), string(name: 'URL_SUBFOLDER', value: 'speedwagon')], wait: false
-        }
+        cleanup{
+            echo "Cleaning up."
+            script {
+                if(fileExists('source/setup.py')){
+                    dir("source"){
+                        try{
+                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
+                        } catch (Exception ex) {
+                            echo "Unable to succesfully run clean. Purging source directory."
+                            deleteDir()
+                        }   
+                    }
+                }                
+                if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
+                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
+                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                    }
+
+                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
+                    echo "Devpi remove exited with code ${devpi_remove_return_code}."
+                }
+            }
+        } 
     }
+    // post {
+    //     success {
+    //         build job: 'speedwagon/master', parameters: [string(nama: 'PROJECT_NAME', value: 'Speedwagon'), booleanParam(name: 'UPDATE_JIRA_EPIC', value: false), string(name: 'JIRA_ISSUE', value: 'PSR-83'), booleanParam(name: 'TEST_RUN_PYTEST', value: true), booleanParam(name: 'TEST_RUN_BEHAVE', value: true), booleanParam(name: 'TEST_RUN_DOCTEST', value: true), booleanParam(name: 'TEST_RUN_FLAKE8', value: true), booleanParam(name: 'TEST_RUN_MYPY', value: true), booleanParam(name: 'PACKAGE_PYTHON_FORMATS', value: true), booleanParam(name: 'PACKAGE_WINDOWS_STANDALONE', value: true), booleanParam(name: 'DEPLOY_DEVPI', value: true), string(name: 'RELEASE', value: 'None'), booleanParam(name: 'UPDATE_DOCS', value: false), string(name: 'URL_SUBFOLDER', value: 'speedwagon')], wait: false
+    //     }
+    // }
 }
