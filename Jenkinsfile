@@ -4,7 +4,8 @@ import org.ds.*
 
 def name = "unknown"
 def version = "unknown"
-def reports_dir = "${pwd tmp: true}/reports"
+
+def reports_dir = "
 
 pipeline {
     agent {
@@ -38,6 +39,11 @@ pipeline {
     {
         stage("Configure") {
             steps {
+                // Set up the reports directory variable 
+                script{
+                    reports_dir = "${pwd tmp: true}/reports"
+                }
+                
                 script{
                     if (params.FRESH_WORKSPACE == true){
                         deleteDir()
