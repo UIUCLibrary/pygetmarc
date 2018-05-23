@@ -218,22 +218,28 @@ Report Directory   = ${reports_dir}
             //     }
             // }
         // }
-        stage("Run Tox test") {
-            when {
-                equals expected: true, actual: params.TEST_RUN_TOX
-            }
-            steps {
-                dir("source"){
-                    bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+        stage("Testing") {
+            parallel {
+                stage("Run Tox test") {
+                    when {
+                        equals expected: true, actual: params.TEST_RUN_TOX
+                    }
+                    steps {
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                        }
+                        
+                    }
+                    post {
+                        failure {
+                            bat "@RD /S /Q ${WORKSPACE}\\.tox"
+                        }
+                    }
                 }
-                
-            }
-            post {
-                failure {
-                    bat "@RD /S /Q ${WORKSPACE}\\.tox"
-                }
+
             }
         }
+        
         stage("Additional tests") {
             when {
                 expression { params.ADDITIONAL_TESTS == true }
@@ -248,21 +254,7 @@ Report Directory   = ${reports_dir}
                             // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                         }
-                        bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"
-                            // script{
-                            //     // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                            //     def alljob = env.JOB_NAME.tokenize("/") as String[]
-                            //     def project_name = alljob[0]
-                            //     dir("${WORKSPACE}/.tox/dist") {
-                            //         zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
-                            //         dir("html"){
-                            //             stash includes: '**', name: "HTML Documentation"
-                            //         }
-                            //     }
-                            // }
-                            // publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        
-                        
+                        bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"                  
                         dir("${reports_dir}"){
                             bat "dir"
                             archiveArtifacts artifacts: "doctest.txt"
