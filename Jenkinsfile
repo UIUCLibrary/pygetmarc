@@ -261,8 +261,13 @@ Report Directory   = ${reports_dir}
                             //     }
                             // }
                             // publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        bat "dir ${reports_dir}"
-                        archiveArtifacts artifacts: "${reports_dir}\\doctest.txt"
+                        
+                        
+                        dir("${reports_dir}"){
+                            bat "dir"
+                            archiveArtifacts artifacts: "doctest.txt"
+                        }
+                        
                         // }
                     },
                     "MyPy": {
