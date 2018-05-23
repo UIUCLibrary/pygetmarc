@@ -298,56 +298,7 @@ Report Directory   = ${reports_dir}
 
             }
         }
-        
-        // stage("Run Integration tests") {
-        //     when {
-        //         expression { params.ADDITIONAL_TESTS == true }
-        //     }
-
-        //     steps {
-        //         parallel(
-        //             // "Documentation": {
-        //             //     // node(label: "Windows") {
-        //             //     //     checkout scm
-        //             //     dir("source"){
-        //             //         // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
-        //             //         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
-        //             //     }
-        //             //     bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"                  
-        //             //     dir("${reports_dir}"){
-        //             //         bat "dir"
-        //             //         archiveArtifacts artifacts: "doctest.txt"
-        //             //     }
-                        
-        //             //     // }
-        //             // },
-        //             // "MyPy": {
-                    
-        //             //     // node(label: "Windows") {
-        //             //     //     checkout scm
-        //             //     dir("source"){
-        //             //         // bat "call make.bat install-dev"
-        //             //         bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report ${WORKSPACE}//reports/mypy_html"
-        //             //         junit "junit-${env.NODE_NAME}-mypy.xml"
-                            
-        //             //     }
-        //             //     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
-        //             //     // }
-        //             // },
-        //             "Integration": {
-        //                 // node(label: "Windows"){
-        //                     // checkout scm
-        //                 dir("source"){
-        //                     // bat "call make.bat install-dev"
-        //                     bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
-        //                     bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov=uiucprescon"
-        //                 }
-        //                 publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
-        //                 // }
-        //             }
-        //         )
-        //     }
-        // }
+    
         stage("Packaging") {
             steps {
                 dir("source"){
@@ -360,55 +311,53 @@ Report Directory   = ${reports_dir}
                 }
             }
         }
-        // stag
-        // stage("Packaging") {
-        //     when {
-        //         expression { params.PACKAGE == true }
-        //     }
-            
-
-        //     // steps {
-        //     //     parallel(
-        //     //             "Source and Wheel formats": {
-        //     //                 dir("source"){
-        //     //                     bat "call make.bat"
-        //     //                 }
-        //     //             },
-        //     //     )
-        //     // }
-        //     post {
-        //       success {
-        //           dir("source"){
-        //             dir("dist"){
-        //                 archiveArtifacts artifacts: "*.whl", fingerprint: true
-        //                 archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
-        //             }
-        //         }
-        //       }
-        //     }
-
-        // }
 
         stage("Deploying to Devpi") {
             when {
-                expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") }
+                allOf{
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    anyOf {
+                        equals expected: "master", actual: env.BRANCH_NAME
+                        equals expected: "dev", actual: env.BRANCH_NAME
+                    }
+                }
             }
             steps {
-                bat "${tool 'CPython-3.6'} -m devpi use http://devpy.library.illinois.edu"
+                bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                    bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                    script {
-                        bat "${tool 'CPython-3.6'} -m devpi upload --from-dir dist"
+                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    
+                }
+                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                script {
+                        bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "${tool 'CPython-3.6'} -m devpi upload --only-docs --from-dir dist"
+                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir build"
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs."
                         }
                     }
-                }
 
             }
+            // when {
+            //     expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") }
+            // }
+            // steps {
+            //     bat "${tool 'CPython-3.6'} -m devpi use http://devpy.library.illinois.edu"
+            //     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+            //         bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+            //         bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+            //         script {
+            //             bat "${tool 'CPython-3.6'} -m devpi upload --from-dir dist"
+            //             try {
+            //                 bat "${tool 'CPython-3.6'} -m devpi upload --only-docs --from-dir dist"
+            //             } catch (exc) {
+            //                 echo "Unable to upload to devpi with docs."
+            //             }
+            //         }
+            //     }
+
+            // }
         }
         stage("Test Devpi packages") {
             when {
