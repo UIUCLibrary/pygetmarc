@@ -4,9 +4,12 @@ from uiucprescon import pygetmarc
 
 
 def get_sample_record(bib_id):
-    with open(os.path.join(os.path.dirname(__file__), f"{bib_id}.marc"), "rU", encoding="utf-8-sig") as marc_file:
+    with open(os.path.join(os.path.dirname(__file__), f"{bib_id}.marc"), "rU",
+              encoding="utf-8-sig") as marc_file:
+
         expected_marc_data = marc_file.read()
     return expected_marc_data.strip()
+
 
 @pytest.mark.integration
 @pytest.mark.parametrize("bib_id,validate", [
