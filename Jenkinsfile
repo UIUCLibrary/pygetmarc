@@ -41,7 +41,7 @@ pipeline {
             steps {
                 // Set up the reports directory variable 
                 script{
-                    reports_dir = "${pwd tmp: true}/reports"
+                    reports_dir = "${pwd tmp: true}\\reports"
                 }
                 
                 script{
