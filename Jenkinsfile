@@ -28,6 +28,9 @@ pipeline {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
         string(name: "PROJECT_NAME", defaultValue: "pyGetMarc", description: "Name given to the project")
         booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
+        booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
+        booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
+        booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
         booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a package")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
@@ -151,6 +154,7 @@ Report Directory   = ${reports_dir}
                         
                         tee('logs/build.log') {
                             dir("source"){
+                                bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build --build-dir ${WORKSPACE}\\build"
 
                                 // powershell "Start-Process -NoNewWindow -FilePath ${tool 'CPython-3.6'} -ArgumentList '-m pipenv run python setup.py build -b ${WORKSPACE}\\build' -Wait"
                                 // bat script: "${tool 'CPython-3.6'} -m pipenv run python setup.py build -b ${WORKSPACE}\\build"
@@ -204,20 +208,6 @@ Report Directory   = ${reports_dir}
                 }
             }
         }
-        // stage("Unit tests") {
-            
-            // when {
-            //     expression { params.UNIT_TESTS == true }
-            // }
-            // steps {
-            //     node(label: "Windows") {
-            //         checkout scm
-            //         bat "${tool 'CPython-3.6'} -m tox -e pytest -- --junitxml=reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/coverage/ --cov=uiucprescon" //  --basetemp={envtmpdir}"
-            //         junit "reports/junit-${env.NODE_NAME}-pytest.xml"
-            //         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
-            //     }
-            // }
-        // }
         stage("Testing") {
             parallel {
                 stage("Run Tox test") {
@@ -233,6 +223,26 @@ Report Directory   = ${reports_dir}
                     post {
                         failure {
                             bat "@RD /S /Q ${WORKSPACE}\\.tox"
+                        }
+                    }
+                }
+                stage("Run Doctest Tests"){
+                    when {
+                       equals expected: true, actual: params.TEST_RUN_DOCTEST
+                    }
+                    steps {
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+                        }
+                    }
+                    post{
+                        always {
+                            bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"
+                            dir("${reports_dir}"){
+                                bat "dir"
+                                archiveArtifacts artifacts: "doctest.txt"
+                            }
+
                         }
                     }
                 }
