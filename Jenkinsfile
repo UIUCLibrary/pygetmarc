@@ -232,47 +232,50 @@ pipeline {
             steps {
                 parallel(
                     "Documentation": {
-                        node(label: "Windows") {
-                            checkout scm
-                            dir("source"){
-                                bat "${tool 'CPython-3.6'} -m tox -e docs"
-                                script{
-                                    // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                                    def alljob = env.JOB_NAME.tokenize("/") as String[]
-                                    def project_name = alljob[0]
-                                    dir('.tox/dist') {
-                                        zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
-                                        dir("html"){
-                                            stash includes: '**', name: "HTML Documentation"
-                                        }
-                                    }
-                                }
-                                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            }
+                        // node(label: "Windows") {
+                        //     checkout scm
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
+                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+                            // script{
+                            //     // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+                            //     def alljob = env.JOB_NAME.tokenize("/") as String[]
+                            //     def project_name = alljob[0]
+                            //     dir("${WORKSPACE}/.tox/dist") {
+                            //         zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
+                            //         dir("html"){
+                            //             stash includes: '**', name: "HTML Documentation"
+                            //         }
+                            //     }
+                            // }
+                            // publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         }
+                        archiveArtifacts artifacts: 'reports/doctest.txt'
+                        // }
                     },
                     "MyPy": {
                     
-                        node(label: "Windows") {
-                            checkout scm
-                            dir("source"){
-                                bat "call make.bat install-dev"
-                                bat "venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report reports/mypy_html"
-                                junit "junit-${env.NODE_NAME}-mypy.xml"
-                                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
-                            }
+                        // node(label: "Windows") {
+                        //     checkout scm
+                        dir("source"){
+                            // bat "call make.bat install-dev"
+                            bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report ${WORKSPACE}//reports/mypy_html"
+                            junit "junit-${env.NODE_NAME}-mypy.xml"
+                            
                         }
+                        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
+                        // }
                     },
                     "Integration": {
-                        node(label: "Windows"){
-                            checkout scm
-                            dir("source"){
-                                bat "call make.bat install-dev"
-                                bat "venv\\Scripts\\pip.exe install pytest-cov"
-                                bat "venv\\Scripts\\pytest.exe -m integration --junitxml=reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/coverage/ --cov=uiucprescon"
-                                publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
-                            }
+                        // node(label: "Windows"){
+                            // checkout scm
+                        dir("source"){
+                            // bat "call make.bat install-dev"
+                            bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
+                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov=uiucprescon"
                         }
+                        publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+                        // }
                     }
                 )
             }
