@@ -236,8 +236,9 @@ pipeline {
                         // node(label: "Windows") {
                         //     checkout scm
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
+                            // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+                            bat "move build\\docs\\output.txt ${WORKSPACE}\\reports\\doctest.txt"
                             // script{
                             //     // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
                             //     def alljob = env.JOB_NAME.tokenize("/") as String[]
