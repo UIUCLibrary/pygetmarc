@@ -1,12 +1,16 @@
+import difflib
 import os
 import pytest
 from uiucprescon import pygetmarc
 
 
 def get_sample_record(bib_id):
-    with open(os.path.join(os.path.dirname(__file__), f"{bib_id}.marc"), "rU", encoding="utf-8-sig") as marc_file:
+    with open(os.path.join(os.path.dirname(__file__), f"{bib_id}.marc"), "rU",
+              encoding="utf-8-sig") as marc_file:
+
         expected_marc_data = marc_file.read()
     return expected_marc_data.strip()
+
 
 @pytest.mark.integration
 @pytest.mark.parametrize("bib_id,validate", [
@@ -16,7 +20,22 @@ def get_sample_record(bib_id):
 def test_get_marc(bib_id, validate):
     expected_marc_data = get_sample_record(bib_id)
     marc_record = pygetmarc.get_marc(bib_id, validate)
-    assert expected_marc_data == marc_record
+
+    # ########################################################
+    #   Test the results
+    # ########################################################
+    differ = difflib.Differ()
+    mismatched = []
+
+    for diff in differ.compare(expected_marc_data.splitlines(),
+                               marc_record.splitlines()):
+
+        if not diff.startswith(" "):
+            mismatched.append(diff)
+
+    if mismatched:
+        pytest.fail("The following lines don't match:\n"
+                    "{}".format("\n".join(mismatched)))
 
 
 @pytest.mark.integration

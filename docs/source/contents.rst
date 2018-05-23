@@ -1,18 +1,13 @@
-User's Guide
-------------
-
 .. toctree::
-    :maxdepth: 2
+    :caption: User's Guide
 
     about
     installation
     usage
     history
 
-API Reference
--------------
-
 .. toctree::
-    :maxdepth: 1
+    :titlesonly:
+    :caption: API Reference
 
     pygetmarc
