@@ -2,14 +2,28 @@
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
 
+def name = "unknown"
+def version = "unknown"
+
 pipeline {
     agent {
         label "Windows&&DevPi"
     }
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
+        timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
+        checkoutToSubdirectory("source")
     }
+    environment {
+        build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
+        PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
+    }
+    triggers {
+        cron('@daily')
+    }
+    
     parameters {
+        booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
         string(name: "PROJECT_NAME", defaultValue: "pyGetMarc", description: "Name given to the project")
         booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
         booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
@@ -19,26 +33,194 @@ pipeline {
         booleanParam(name: "UPDATE_DOCS", defaultValue: false, description: "Update online documentation")
         string(name: 'URL_SUBFOLDER', defaultValue: "pygetmarc", description: 'The directory that the docs should be saved under')
     }
-    stages {
-
-        stage("Cloning Source") {
+    stages 
+    {
+        stage("Configure") {
             steps {
-                deleteDir()
-                checkout scm
-                stash includes: '**', name: "Source", useDefaultExcludes: false
+                script{
+                    if (params.FRESH_WORKSPACE == true){
+                        deleteDir()
+                        checkout scm
+                    }
+                }
+
+                
+                dir(pwd(tmp: true)){
+                    dir("logs"){
+                        deleteDir()
+                    }
+                
+                }
+                dir("logs"){
+                    deleteDir()
+                }
+                
+                dir("build"){
+                    deleteDir()
+                    echo "Cleaned out build directory"
+                    bat "dir"
+                }
+                dir("reports"){
+                    deleteDir()
+                    echo "Cleaned out reports directory"
+                    bat "dir"
+                }
+                lock("system_python"){
+                    bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                }
+
+                
+                script {
+                    dir("source"){
+                        name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                        version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                    }
+                }
+
+                tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
+                    bat "${tool 'CPython-3.6'} -m pip list"
+                }
+                bat "dir ${pwd tmp: true}"
+                bat "dir ${pwd tmp: true}\\logs"
+                
+                bat "${tool 'CPython-3.6'} -m venv venv"
+                script {
+                    try {
+                        bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                    }
+                    catch (exc) {
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                    }
+                    
+
+                }
+                
+                bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+
+                tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+                    bat "venv\\Scripts\\pip.exe list"
+                }
+                bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
+                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
+                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                }
+                bat "dir"
+            }
+            post{
+                always{
+                    
+                    dir(pwd(tmp: true)){
+                        archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                        archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+
+                    }
+                }
+                failure {
+                    deleteDir()
+                }
             }
 
         }
-        stage("Unit tests") {
+
+        // stage("Cloning Source") {
+        //     steps {
+        //         deleteDir()
+        //         checkout scm
+        //         stash includes: '**', name: "Source", useDefaultExcludes: false
+        //     }
+
+        // }
+        stage('Build') {
+            parallel {
+                stage("Python Package"){
+                    steps {
+                        
+                        tee('logs/build.log') {
+                            dir("source"){
+
+                                // powershell "Start-Process -NoNewWindow -FilePath ${tool 'CPython-3.6'} -ArgumentList '-m pipenv run python setup.py build -b ${WORKSPACE}\\build' -Wait"
+                                // bat script: "${tool 'CPython-3.6'} -m pipenv run python setup.py build -b ${WORKSPACE}\\build"
+                            }
+                        }
+                    }
+                    post{
+                        always{
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
+                            archiveArtifacts artifacts: "logs/*.log"
+                            // bat "dir build"
+                        }
+                        failure{
+                            echo "Failed to build Python package"
+                        }
+                        success{
+                            echo "Successfully built project is ./build."
+                        }
+                    }
+                }
+                stage("Sphinx documentation"){
+                    when {
+                        equals expected: true, actual: params.BUILD_DOCS
+                    }
+                    steps {
+                        // bat 'mkdir "build/docs/html"'
+                        echo "Building docs on ${env.NODE_NAME}"
+                        tee('logs/build_sphinx.log') {
+                            dir("source"){
+                                bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                            }   
+                        }
+                    }
+                    post{
+                        always {
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                            archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                        }
+                        success{
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                            script{
+                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+                                def alljob = env.JOB_NAME.tokenize("/") as String[]
+                                def project_name = alljob[0]
+                                dir('build/docs/') {
+                                    zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,7)}.zip"
+                                }
+                            }
+                        }
+                        failure{
+                            echo "Failed to build Python package"
+                        }
+                    }
+                }
+            }
+        }
+        // stage("Unit tests") {
+            
+            // when {
+            //     expression { params.UNIT_TESTS == true }
+            // }
+            // steps {
+            //     node(label: "Windows") {
+            //         checkout scm
+            //         bat "${tool 'CPython-3.6'} -m tox -e pytest -- --junitxml=reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/coverage/ --cov=uiucprescon" //  --basetemp={envtmpdir}"
+            //         junit "reports/junit-${env.NODE_NAME}-pytest.xml"
+            //         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+            //     }
+            // }
+        // }
+        stage("Run Tox test") {
             when {
-                expression { params.UNIT_TESTS == true }
+                equals expected: true, actual: params.TEST_RUN_TOX
             }
             steps {
-                node(label: "Windows") {
-                    checkout scm
-                    bat "${tool 'CPython-3.6'} -m tox -e pytest -- --junitxml=reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/coverage/ --cov=uiucprescon" //  --basetemp={envtmpdir}"
-                    junit "reports/junit-${env.NODE_NAME}-pytest.xml"
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                dir("source"){
+                    bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                }
+                
+            }
+            post {
+                failure {
+                    bat "@RD /S /Q ${WORKSPACE}\\.tox"
                 }
             }
         }
@@ -52,38 +234,44 @@ pipeline {
                     "Documentation": {
                         node(label: "Windows") {
                             checkout scm
-                            bat "${tool 'CPython-3.6'} -m tox -e docs"
-                            script{
-                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                                def alljob = env.JOB_NAME.tokenize("/") as String[]
-                                def project_name = alljob[0]
-                                dir('.tox/dist') {
-                                    zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
-                                    dir("html"){
-                                        stash includes: '**', name: "HTML Documentation"
+                            dir("source"){
+                                bat "${tool 'CPython-3.6'} -m tox -e docs"
+                                script{
+                                    // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+                                    def alljob = env.JOB_NAME.tokenize("/") as String[]
+                                    def project_name = alljob[0]
+                                    dir('.tox/dist') {
+                                        zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,6)}.zip"
+                                        dir("html"){
+                                            stash includes: '**', name: "HTML Documentation"
+                                        }
                                     }
                                 }
+                                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                             }
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         }
                     },
                     "MyPy": {
                     
                         node(label: "Windows") {
                             checkout scm
-                            bat "call make.bat install-dev"
-                            bat "venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report reports/mypy_html"
-                            junit "junit-${env.NODE_NAME}-mypy.xml"
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
+                            dir("source"){
+                                bat "call make.bat install-dev"
+                                bat "venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report reports/mypy_html"
+                                junit "junit-${env.NODE_NAME}-mypy.xml"
+                                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
+                            }
                         }
                     },
                     "Integration": {
                         node(label: "Windows"){
                             checkout scm
-                            bat "call make.bat install-dev"
-                            bat "venv\\Scripts\\pip.exe install pytest-cov"
-                            bat "venv\\Scripts\\pytest.exe -m integration --junitxml=reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/coverage/ --cov=uiucprescon"
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+                            dir("source"){
+                                bat "call make.bat install-dev"
+                                bat "venv\\Scripts\\pip.exe install pytest-cov"
+                                bat "venv\\Scripts\\pytest.exe -m integration --junitxml=reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:reports/coverage/ --cov=uiucprescon"
+                                publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+                            }
                         }
                     }
                 )
@@ -97,15 +285,19 @@ pipeline {
             steps {
                 parallel(
                         "Source and Wheel formats": {
-                            bat "call make.bat"
+                            dir("source"){
+                                bat "call make.bat"
+                            }
                         },
                 )
             }
             post {
               success {
-                  dir("dist"){
-                      archiveArtifacts artifacts: "*.whl", fingerprint: true
-                      archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+                  dir("source"){
+                    dir("dist"){
+                        archiveArtifacts artifacts: "*.whl", fingerprint: true
+                        archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
+                    }
                 }
               }
             }
@@ -141,8 +333,8 @@ pipeline {
                 parallel(
                         "Source": {
                             script {
-                                def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                                def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                                // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                                // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                                 node("Windows") {
                                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                         bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
@@ -156,8 +348,8 @@ pipeline {
                         },
                         "Wheel": {
                             script {
-                                def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                                def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                                // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                                // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                                 node("Windows") {
                                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                         bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
@@ -176,8 +368,8 @@ pipeline {
                 success {
                     echo "It Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
-                        def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                        def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                        // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                        // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -195,8 +387,8 @@ pipeline {
 
             steps {
                 script {
-                    def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
-                    def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                    // def name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --name").trim()
+                    // def version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                         bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
@@ -205,11 +397,11 @@ pipeline {
 
                 }
             }
-            post {
-                success {
-                    build job: 'speedwagon/master', parameters: [string(nama: 'PROJECT_NAME', value: 'Speedwagon'), booleanParam(name: 'UPDATE_JIRA_EPIC', value: false), string(name: 'JIRA_ISSUE', value: 'PSR-83'), booleanParam(name: 'TEST_RUN_PYTEST', value: true), booleanParam(name: 'TEST_RUN_BEHAVE', value: true), booleanParam(name: 'TEST_RUN_DOCTEST', value: true), booleanParam(name: 'TEST_RUN_FLAKE8', value: true), booleanParam(name: 'TEST_RUN_MYPY', value: true), booleanParam(name: 'PACKAGE_PYTHON_FORMATS', value: true), booleanParam(name: 'PACKAGE_WINDOWS_STANDALONE', value: true), booleanParam(name: 'DEPLOY_DEVPI', value: true), string(name: 'RELEASE', value: 'None'), booleanParam(name: 'UPDATE_DOCS', value: false), string(name: 'URL_SUBFOLDER', value: 'speedwagon')], wait: false
-                }
-            }
+            // post {
+            //     success {
+            //         build job: 'speedwagon/master', parameters: [string(nama: 'PROJECT_NAME', value: 'Speedwagon'), booleanParam(name: 'UPDATE_JIRA_EPIC', value: false), string(name: 'JIRA_ISSUE', value: 'PSR-83'), booleanParam(name: 'TEST_RUN_PYTEST', value: true), booleanParam(name: 'TEST_RUN_BEHAVE', value: true), booleanParam(name: 'TEST_RUN_DOCTEST', value: true), booleanParam(name: 'TEST_RUN_FLAKE8', value: true), booleanParam(name: 'TEST_RUN_MYPY', value: true), booleanParam(name: 'PACKAGE_PYTHON_FORMATS', value: true), booleanParam(name: 'PACKAGE_WINDOWS_STANDALONE', value: true), booleanParam(name: 'DEPLOY_DEVPI', value: true), string(name: 'RELEASE', value: 'None'), booleanParam(name: 'UPDATE_DOCS', value: false), string(name: 'URL_SUBFOLDER', value: 'speedwagon')], wait: false
+            //     }
+            // }
         }
         stage("Update online documentation") {
             agent {
