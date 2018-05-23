@@ -70,6 +70,13 @@ pipeline {
                     echo "Cleaned out build directory"
                     bat "dir"
                 }
+
+                dir("dist"){
+                    deleteDir()
+                    echo "Cleaned out distrubution directory"
+                    bat "dir"
+                }
+
                 dir("${pwd tmp: true}/reports"){
                     deleteDir()
                     echo "Cleaned out reports directory"
@@ -630,6 +637,7 @@ Report Directory   = ${reports_dir}
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
+            bat "dir"
         } 
     }
     // post {
