@@ -154,7 +154,7 @@ Report Directory   = ${reports_dir}
                         
                         tee('logs/build.log') {
                             dir("source"){
-                                bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build --build-dir ${WORKSPACE}\\build"
+                                bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build"
 
                                 // powershell "Start-Process -NoNewWindow -FilePath ${tool 'CPython-3.6'} -ArgumentList '-m pipenv run python setup.py build -b ${WORKSPACE}\\build' -Wait"
                                 // bat script: "${tool 'CPython-3.6'} -m pipenv run python setup.py build -b ${WORKSPACE}\\build"
