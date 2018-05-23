@@ -44,7 +44,6 @@ pipeline {
                     }
                 }
 
-                
                 dir(pwd(tmp: true)){
                     dir("logs"){
                         deleteDir()
@@ -69,7 +68,9 @@ pipeline {
                     bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                 }
 
-                
+                bat "dir"
+                bat "dir source"
+
                 script {
                     dir("source"){
                         name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
