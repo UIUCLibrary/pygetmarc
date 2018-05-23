@@ -247,6 +247,37 @@ Report Directory   = ${reports_dir}
                         }
                     }
                 }
+                stage("Run MyPy Static Analysis") {
+                    when {
+                        equals expected: true, actual: params.TEST_RUN_MYPY
+                    }
+                    steps{
+                        dir("reports/mypy/html"){
+                            deleteDir()
+                            bat "dir"
+                        }
+                        script{
+                            tee("${pwd tmp: true}/logs/mypy.log") {
+                                try{
+                                    dir("source"){
+                                        bat "dir"
+                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html"
+                                    }
+                                } catch (exc) {
+                                    echo "MyPy found some warnings"
+                                }
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            dir(pwd(tmp: true)){
+                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
+                            }
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                        }
+                    }
+                }
 
             }
         }
