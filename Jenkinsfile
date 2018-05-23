@@ -42,7 +42,6 @@ pipeline {
                 // Set up the reports directory variable 
                 script{
                     reports_dir = "${pwd tmp: true}/reports"
-                    echo "reports directory = ${reports_dir}"
                 }
                 
                 script{
@@ -118,9 +117,10 @@ pipeline {
             }
             post{
                 always{
-                    echo "Name               = ${name}"
-                    echo "Version            = ${version}"
-                    echo "Report Directory   = ${reports_dir}"
+                    echo """Name               = ${name}
+Version            = ${version}
+Report Directory   = ${reports_dir}
+"""
                     
 
                     dir(pwd(tmp: true)){
@@ -248,7 +248,7 @@ pipeline {
                             // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                         }
-                            bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"
+                        bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"
                             // script{
                             //     // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
                             //     def alljob = env.JOB_NAME.tokenize("/") as String[]
@@ -261,7 +261,7 @@ pipeline {
                             //     }
                             // }
                             // publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        
+                        bat "dir ${reports_dir}"
                         archiveArtifacts artifacts: "${reports_dir}\\doctest.txt"
                         // }
                     },
