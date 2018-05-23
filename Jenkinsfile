@@ -31,6 +31,7 @@ pipeline {
         booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
         booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
         booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
+        booleanParam(name: "TEST_RUN_INTEGRATION", defaultValue: true, description: "Run integration tests")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         booleanParam(name: "ADDITIONAL_TESTS", defaultValue: true, description: "Run additional tests")
         booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a package")
@@ -278,59 +279,75 @@ Report Directory   = ${reports_dir}
                         }
                     }
                 }
+                stage("Run Integration tests") {
+                    when {
+                        equals expected: true, actual: params.TEST_RUN_INTEGRATION
+                    }
+                    steps {
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
+                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov=uiucprescon"
+                        }
+                    }
+                    post {
+                        always{
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+                        }
+                    }
+                }
 
             }
         }
         
-        stage("Additional tests") {
-            when {
-                expression { params.ADDITIONAL_TESTS == true }
-            }
+        // stage("Run Integration tests") {
+        //     when {
+        //         expression { params.ADDITIONAL_TESTS == true }
+        //     }
 
-            steps {
-                parallel(
-                    "Documentation": {
-                        // node(label: "Windows") {
-                        //     checkout scm
-                        dir("source"){
-                            // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
-                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
-                        }
-                        bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"                  
-                        dir("${reports_dir}"){
-                            bat "dir"
-                            archiveArtifacts artifacts: "doctest.txt"
-                        }
+        //     steps {
+        //         parallel(
+        //             // "Documentation": {
+        //             //     // node(label: "Windows") {
+        //             //     //     checkout scm
+        //             //     dir("source"){
+        //             //         // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
+        //             //         bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+        //             //     }
+        //             //     bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"                  
+        //             //     dir("${reports_dir}"){
+        //             //         bat "dir"
+        //             //         archiveArtifacts artifacts: "doctest.txt"
+        //             //     }
                         
-                        // }
-                    },
-                    "MyPy": {
+        //             //     // }
+        //             // },
+        //             // "MyPy": {
                     
-                        // node(label: "Windows") {
-                        //     checkout scm
-                        dir("source"){
-                            // bat "call make.bat install-dev"
-                            bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report ${WORKSPACE}//reports/mypy_html"
-                            junit "junit-${env.NODE_NAME}-mypy.xml"
+        //             //     // node(label: "Windows") {
+        //             //     //     checkout scm
+        //             //     dir("source"){
+        //             //         // bat "call make.bat install-dev"
+        //             //         bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --junit-xml=junit-${env.NODE_NAME}-mypy.xml --html-report ${WORKSPACE}//reports/mypy_html"
+        //             //         junit "junit-${env.NODE_NAME}-mypy.xml"
                             
-                        }
-                        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
-                        // }
-                    },
-                    "Integration": {
-                        // node(label: "Windows"){
-                            // checkout scm
-                        dir("source"){
-                            // bat "call make.bat install-dev"
-                            bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
-                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov=uiucprescon"
-                        }
-                        publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
-                        // }
-                    }
-                )
-            }
-        }
+        //             //     }
+        //             //     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy_html', reportFiles: 'index.html', reportName: 'MyPy', reportTitles: ''])
+        //             //     // }
+        //             // },
+        //             "Integration": {
+        //                 // node(label: "Windows"){
+        //                     // checkout scm
+        //                 dir("source"){
+        //                     // bat "call make.bat install-dev"
+        //                     bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
+        //                     bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov=uiucprescon"
+        //                 }
+        //                 publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+        //                 // }
+        //             }
+        //         )
+        //     }
+        // }
         stage("Packaging") {
             steps {
                 dir("source"){
