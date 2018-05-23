@@ -5,11 +5,15 @@ import asyncio
 import async_timeout
 
 
-async def fetch(session: aiohttp.ClientSession, url: str, params: typing.Dict[str, str]) -> typing.Any:
+async def fetch(session: aiohttp.ClientSession, url: str,
+                params: typing.Dict[str, str]) -> typing.Any:
+
     with async_timeout.timeout(10):
         async with session.get(url, params=params) as response:
             if response.status == 404:
-                raise ValueError("{} produces a 404 return code".format(response.url))
+                raise ValueError("{} produces a 404 return code".format
+                                 (response.url))
+
             return await response.text(encoding="utf-8-sig")
 
 
@@ -44,12 +48,16 @@ def get_marc(bib_id: int, validate: bool = False) -> str:
 
     Args:
         bib_id: The bib id from a Voyager record
-        validate: MARC XML returned from the Z39.50 target should be validated against the XML schema before further
-            processing.
+        validate: MARC XML returned from the Z39.50 target should be validated
+            against the XML schema before further processing.
 
-    Returns: Marc XML data
+    Returns:
+        Marc XML data
 
     """
     loop = asyncio.get_event_loop()
-    value = loop.run_until_complete(get_marc_async(bib_id=bib_id, validate=validate))
+
+    value = loop.run_until_complete(
+        get_marc_async(bib_id=bib_id, validate=validate))
+
     return value
