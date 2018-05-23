@@ -332,32 +332,13 @@ Report Directory   = ${reports_dir}
                 script {
                         bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir build"
+                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist"
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs."
                         }
                     }
 
             }
-            // when {
-            //     expression { params.DEPLOY_DEVPI == true && (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev") }
-            // }
-            // steps {
-            //     bat "${tool 'CPython-3.6'} -m devpi use http://devpy.library.illinois.edu"
-            //     withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-            //         bat "${tool 'CPython-3.6'} -m devpi login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-            //         bat "${tool 'CPython-3.6'} -m devpi use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-            //         script {
-            //             bat "${tool 'CPython-3.6'} -m devpi upload --from-dir dist"
-            //             try {
-            //                 bat "${tool 'CPython-3.6'} -m devpi upload --only-docs --from-dir dist"
-            //             } catch (exc) {
-            //                 echo "Unable to upload to devpi with docs."
-            //             }
-            //         }
-            //     }
-
-            // }
         }
         // stage("Test Devpi packages") {
         //     when {
