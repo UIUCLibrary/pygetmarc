@@ -118,7 +118,11 @@ pipeline {
             }
             post{
                 always{
+                    echo "Name               = ${name}"
+                    echo "Version            = ${version}"
+                    echo "Report Directory   = ${reports_dir}"
                     
+
                     dir(pwd(tmp: true)){
                         archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                         archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
