@@ -42,6 +42,7 @@ pipeline {
                 // Set up the reports directory variable 
                 script{
                     reports_dir = "${pwd tmp: true}/reports"
+                    echo "reports directory = ${reports_dir}"
                 }
                 
                 script{
@@ -167,9 +168,6 @@ pipeline {
                     }
                 }
                 stage("Sphinx documentation"){
-                    when {
-                        equals expected: true, actual: params.BUILD_DOCS
-                    }
                     steps {
                         // bat 'mkdir "build/docs/html"'
                         echo "Building docs on ${env.NODE_NAME}"
@@ -246,7 +244,7 @@ pipeline {
                             // bat "${WORKSPACE}\\venv\\Scripts\\tox.exe -e docs --workdir ${WORKSPACE}\\.tox"
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                         }
-                            bat "move build\\docs\\output.txt ${pwd tmp: true}\\reports\\doctest.txt"
+                            bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"
                             // script{
                             //     // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
                             //     def alljob = env.JOB_NAME.tokenize("/") as String[]
@@ -260,7 +258,7 @@ pipeline {
                             // }
                             // publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         
-                        archiveArtifacts artifacts: "${pwd tmp: true}/reports/doctest.txt"
+                        archiveArtifacts artifacts: "${reports_dir}/doctest.txt"
                         // }
                     },
                     "MyPy": {
