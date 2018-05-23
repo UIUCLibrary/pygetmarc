@@ -5,7 +5,7 @@ import org.ds.*
 def name = "unknown"
 def version = "unknown"
 
-def reports_dir = "
+def reports_dir = ""
 
 pipeline {
     agent {
