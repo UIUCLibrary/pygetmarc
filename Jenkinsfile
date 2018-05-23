@@ -258,7 +258,7 @@ pipeline {
                             // }
                             // publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '.tox/dist/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         
-                        archiveArtifacts artifacts: "${reports_dir}/doctest.txt"
+                        archiveArtifacts artifacts: "${reports_dir}\\doctest.txt"
                         // }
                     },
                     "MyPy": {
