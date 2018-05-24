@@ -433,7 +433,11 @@ Report Directory   = ${reports_dir}
                         PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
                     }
                     steps {
+                        
                         echo "Testing Source tar.gz package in devpi"
+                        
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                     
@@ -467,6 +471,8 @@ Report Directory   = ${reports_dir}
                     }
                     steps {
                         echo "Testing Source zip package in devpi"
+                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                         }
