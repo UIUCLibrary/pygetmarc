@@ -421,6 +421,14 @@ Report Directory   = ${reports_dir}
 
             parallel {
                 stage("Source Distribution: .tar.gz") {
+                    agent {
+                        node {
+                            label "Windows && Python3"
+                        }
+                    }
+                    options {
+                        skipDefaultCheckout(true)
+                    }
                     environment {
                         PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
                     }
@@ -446,6 +454,14 @@ Report Directory   = ${reports_dir}
 
                 }
                 stage("Source Distribution: .zip") {
+                    agent {
+                        node {
+                            label "Windows && Python3"
+                        }
+                    }
+                    options {
+                        skipDefaultCheckout(true)
+                    }
                     environment {
                         PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
                     }
