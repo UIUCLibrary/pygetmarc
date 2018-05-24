@@ -51,11 +51,16 @@ pipeline {
                 script{
                     if (params.FRESH_WORKSPACE == true){
                         deleteDir()
-                        checkout([$class: 'GitSCM',
-                            branches: [[name: env.BRANCH_NAME]],
-                            extensions: [[$class: 'CleanBeforeCheckout']],
-                            userRemoteConfigs: [[url: 'git@github.com:UIUCLibrary/pygetmarc.git']]
-                            ])
+                        // checkout([$class: 'GitSCM', branches: [[name: '<branchName>']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'github', url: 'https://github.com/UIUCLibrary/pygetmarc.git']]])
+
+                        checkout scm: [
+                            $class: 'GitSCM', 
+                            branches: [[name: env.BRANCH_NAME]], 
+                            // clean: true
+                            // github
+                            extensions: [[$class: 'CleanBeforeCheckout']], 
+                            userRemoteConfigs: [[credentialsId: 'github', url: 'git@github.com:UIUCLibrary/pygetmarc.git']]
+                            ]
                         dir
                     }
                 }
