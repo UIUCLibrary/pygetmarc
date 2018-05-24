@@ -62,7 +62,7 @@ pipeline {
                         //     extensions: [[$class: 'CleanBeforeCheckout']], 
                         //     userRemoteConfigs: [[credentialsId: 'github', url: 'git@github.com:UIUCLibrary/pygetmarc.git']]
                         //     ]
-                        dir
+                        bat "dir"
                     }
                 }
 
