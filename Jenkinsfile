@@ -9,7 +9,7 @@ def reports_dir = ""
 
 pipeline {
     agent {
-        label "Windows&&DevPi"
+        label "Windows"
     }
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
