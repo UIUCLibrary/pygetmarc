@@ -19,9 +19,9 @@ When printed to the screen, this results in the following output
 .. testoutput::
 
     <record xmlns="http://www.loc.gov/MARC21/slim" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-      <leader>03366cam a2200529I  4500</leader>
+      <leader>03572cam a2200577I  4500</leader>
       <controlfield tag="001">1099891</controlfield>
-      <controlfield tag="005">20180520155231.0</controlfield>
+      <controlfield tag="005">20180527054631.0</controlfield>
       <controlfield tag="008">720602s1926    nyuab    b    000 0 eng  </controlfield>
       <datafield tag="010" ind1=" " ind2=" ">
         <subfield code="a">   26016324 </subfield>
