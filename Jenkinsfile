@@ -218,7 +218,7 @@ Report Directory   = ${reports_dir}
                     post {
                         failure {
                             archiveArtifacts artifacts: ".tox/py36/log/*.log", allowEmptyArchive: true
-                            bat "@RD /S /Q ${WORKSPACE}\\.tox"
+                            // bat "@RD /S /Q ${WORKSPACE}\\.tox"
                         }
                     }
                 }
