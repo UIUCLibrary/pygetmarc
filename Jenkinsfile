@@ -211,7 +211,7 @@ Report Directory   = ${reports_dir}
                     }
                     steps {
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                            bat "${WORKSPACE}\\venv\\Scripts\\activate.bat && tox --workdir ${WORKSPACE}\\.tox"
                         }
                         
                     }
