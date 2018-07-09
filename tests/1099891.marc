@@ -1,7 +1,7 @@
 ﻿<record xmlns="http://www.loc.gov/MARC21/slim" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <leader>03366cam a2200529I  4500</leader>
+  <leader>03572cam a2200577I  4500</leader>
   <controlfield tag="001">1099891</controlfield>
-  <controlfield tag="005">20180520155231.0</controlfield>
+  <controlfield tag="005">20180527054631.0</controlfield>
   <controlfield tag="008">720602s1926    nyuab    b    000 0 eng  </controlfield>
   <datafield tag="010" ind1=" " ind2=" ">
     <subfield code="a">   26016324 </subfield>
@@ -38,6 +38,10 @@
     <subfield code="d">EZC</subfield>
     <subfield code="d">OCLCQ</subfield>
     <subfield code="d">OCLCO</subfield>
+    <subfield code="d">BRL</subfield>
+  </datafield>
+  <datafield tag="066" ind1=" " ind2=" ">
+    <subfield code="c">Zsym</subfield>
   </datafield>
   <datafield tag="016" ind1="7" ind2=" ">
     <subfield code="a">003038054</subfield>
@@ -60,6 +64,9 @@
   <datafield tag="082" ind1="0" ind2="4">
     <subfield code="a">973.7</subfield>
     <subfield code="b">R18c</subfield>
+  </datafield>
+  <datafield tag="096" ind1=" " ind2=" ">
+    <subfield code="a">973.7 R18</subfield>
   </datafield>
   <datafield tag="049" ind1=" " ind2=" ">
     <subfield code="a">UIUU</subfield>
@@ -185,6 +192,16 @@
   <datafield tag="856" ind1="4" ind2="0">
     <subfield code="3">Full text - OCA</subfield>
     <subfield code="u">http://www.archive.org/details/constitutionalpr00randa</subfield>
+  </datafield>
+  <datafield tag="880" ind1=" " ind2=" ">
+    <subfield code="6">300-00</subfield>
+    <subfield code="a">xviii p., 1 &amp;#xfffd;., 580 p. :</subfield>
+    <subfield code="b">ill., map ;</subfield>
+    <subfield code="c">22 cm.</subfield>
+  </datafield>
+  <datafield tag="945" ind1=" " ind2=" ">
+    <subfield code="a">Master record variable field(s) change: 300, 880</subfield>
+    <subfield code="b">05/25/2018</subfield>
   </datafield>
   <datafield tag="945" ind1=" " ind2=" ">
     <subfield code="a">Master record variable field(s) change: 300, 880</subfield>

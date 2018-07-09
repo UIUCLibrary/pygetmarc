@@ -9,7 +9,7 @@ def reports_dir = ""
 
 pipeline {
     agent {
-        label "Windows&&DevPi"
+        label "Windows"
     }
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
@@ -211,13 +211,14 @@ Report Directory   = ${reports_dir}
                     }
                     steps {
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                            bat "${WORKSPACE}\\venv\\Scripts\\activate.bat && tox --workdir ${WORKSPACE}\\.tox"
                         }
                         
                     }
                     post {
                         failure {
-                            bat "@RD /S /Q ${WORKSPACE}\\.tox"
+                            archiveArtifacts artifacts: ".tox/py36/log/*.log", allowEmptyArchive: true
+                            // bat "@RD /S /Q ${WORKSPACE}\\.tox"
                         }
                     }
                 }
