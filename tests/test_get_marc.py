@@ -2,6 +2,7 @@ import difflib
 import os
 import pytest
 from uiucprescon import pygetmarc
+from xml.dom import minidom
 
 
 def get_sample_record(bib_id):
@@ -18,24 +19,12 @@ def get_sample_record(bib_id):
     (1099891, True),
 ])
 def test_get_marc(bib_id, validate):
-    expected_marc_data = get_sample_record(bib_id)
     marc_record = pygetmarc.get_marc(bib_id, validate)
-
-    # ########################################################
-    #   Test the results
-    # ########################################################
-    differ = difflib.Differ()
-    mismatched = []
-
-    for diff in differ.compare(expected_marc_data.splitlines(),
-                               marc_record.splitlines()):
-
-        if not diff.startswith(" "):
-            mismatched.append(diff)
-
-    if mismatched:
-        pytest.fail("The following lines don't match:\n"
-                    "{}".format("\n".join(mismatched)))
+    dom = minidom.parseString(marc_record)
+    for control_element in dom.getElementsByTagName("controlfield"):
+        if not control_element.attributes['tag'].value == "001":
+            continue
+        assert control_element.firstChild.data == str(bib_id)
 
 
 @pytest.mark.integration
