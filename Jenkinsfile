@@ -357,9 +357,6 @@ Report Directory   = ${reports_dir}
                     options {
                         skipDefaultCheckout(true)
                     }
-                    environment {
-                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
-                    }
                     steps {
                         
                         echo "Testing Source tar.gz package in devpi"
@@ -393,9 +390,6 @@ Report Directory   = ${reports_dir}
                     }
                     options {
                         skipDefaultCheckout(true)
-                    }
-                    environment {
-                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
                     }
                     steps {
                         echo "Testing Source zip package in devpi"
