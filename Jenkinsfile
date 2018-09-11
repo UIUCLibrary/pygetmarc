@@ -42,106 +42,112 @@ pipeline {
     stages 
     {
         stage("Configure") {
-            steps {
-                // Set up the reports directory variable 
-                script{
-                    reports_dir = "${pwd tmp: true}\\reports"
-                }
-                
-                script{
-                    if (params.FRESH_WORKSPACE == true){
-                        deleteDir()
-                        dir("source"){
-                            checkout scm
-                            bat "dir"
+            stages{
+                stage("setup"){
+
+
+                    steps {
+                        // Set up the reports directory variable
+                        script{
+                            reports_dir = "${pwd tmp: true}\\reports"
+                        }
+
+                        script{
+                            if (params.FRESH_WORKSPACE == true){
+                                deleteDir()
+                                dir("source"){
+                                    checkout scm
+                                    bat "dir"
+
+                                }
+
+                            }
+                        }
+
+                        dir(pwd(tmp: true)){
+                            dir("logs"){
+                                deleteDir()
+                            }
 
                         }
-                        
-                    }
-                }
+                        dir("logs"){
+                            deleteDir()
+                        }
 
-                dir(pwd(tmp: true)){
-                    dir("logs"){
-                        deleteDir()
-                    }
-                
-                }
-                dir("logs"){
-                    deleteDir()
-                }
-                
-                dir("build"){
-                    deleteDir()
-                    echo "Cleaned out build directory"
-                    bat "dir"
-                }
+                        dir("build"){
+                            deleteDir()
+                            echo "Cleaned out build directory"
+                            bat "dir"
+                        }
 
-                dir("dist"){
-                    deleteDir()
-                    echo "Cleaned out distrubution directory"
-                    bat "dir"
-                }
+                        dir("dist"){
+                            deleteDir()
+                            echo "Cleaned out distrubution directory"
+                            bat "dir"
+                        }
 
-                dir("${pwd tmp: true}/reports"){
-                    deleteDir()
-                    echo "Cleaned out reports directory"
-                    bat "dir"
-                }
-                lock("system_python_${NODE_NAME}"){
-                    bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
-                }
+                        dir("${pwd tmp: true}/reports"){
+                            deleteDir()
+                            echo "Cleaned out reports directory"
+                            bat "dir"
+                        }
+                        lock("system_python_${NODE_NAME}"){
+                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                        }
 
 
-                script {
-                    dir("source"){
-                        name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                        version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-                    }
-                }
+                        script {
+                            dir("source"){
+                                name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                                version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            }
+                        }
 
-                tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
-                    bat "${tool 'CPython-3.6'} -m pip list"
-                }
+                        tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
+                            bat "${tool 'CPython-3.6'} -m pip list"
+                        }
 
-                bat "${tool 'CPython-3.6'} -m venv venv"
-                script {
-                    try {
-                        bat "call venv\\Scripts\\python.exe -m pip install -U pip"
-                    }
-                    catch (exc) {
                         bat "${tool 'CPython-3.6'} -m venv venv"
-                        bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                        script {
+                            try {
+                                bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                            }
+                            catch (exc) {
+                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                            }
+
+
+                        }
+
+                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+
+                        tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+                            bat "venv\\Scripts\\pip.exe list"
+                        }
+                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
+                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                        }
                     }
-                    
+                    post{
+                        always{
+                            echo """Name               = ${name}
+        Version            = ${version}
+        Report Directory   = ${reports_dir}
+        """
 
-                }
-                
-                bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
 
-                tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
-                    bat "venv\\Scripts\\pip.exe list"
-                }
-                bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
-                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                }
-            }
-            post{
-                always{
-                    echo """Name               = ${name}
-Version            = ${version}
-Report Directory   = ${reports_dir}
-"""
-                    
+                            dir(pwd(tmp: true)){
+                                archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                                archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
 
-                    dir(pwd(tmp: true)){
-                        archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                        archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
-
+                            }
+                        }
+                        failure {
+                            deleteDir()
+                        }
                     }
-                }
-                failure {
-                    deleteDir()
                 }
             }
 
