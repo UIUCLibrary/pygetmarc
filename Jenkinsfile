@@ -531,12 +531,6 @@ Report Directory   = ${reports_dir}
                         equals expected: true, actual: params.DEPLOY_DOCS
                     }
                     steps{
-                        script {
-                            if(!params.BUILD_DOCS){
-                                bat "pipenv run python setup.py build_sphinx"
-                            }
-                        }
-                        
                         dir("build/docs/html/"){
                             input 'Update project documentation?'
                             sshPublisher(
