@@ -441,7 +441,7 @@ def test_reflow():
     
   <datafield ind1="1" ind2="0" tag="245">
         
-    <subfield code="a">Studio topografico intorno alla più breve congiunzione stradale fra i due mari nell'alta Italia mercee un varco esistente nel tronco settentrionale dell'Apennino :</subfield>
+    <subfield code="a">Studio topografico intorno alla piuu breve congiunzione stradale fra i due mari nell'alta Italia mercee un varco esistente nel tronco settentrionale dell'Apennino :</subfield>
         
     <subfield code="b">memoria /</subfield>
         
