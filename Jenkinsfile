@@ -58,12 +58,12 @@ pipeline {
                 }
                 stage("Cleanup"){
                     steps {
-                        dir(pwd(tmp: true)){
-                            dir("logs"){
-                                deleteDir()
-                            }
-
+                        dir("logs"){
+                            deleteDir()
+                            echo "Cleaned out logs directory"
+                            bat "dir"
                         }
+
                         dir("logs"){
                             deleteDir()
                         }
@@ -80,7 +80,7 @@ pipeline {
                             bat "dir"
                         }
 
-                        dir("${pwd tmp: true}/reports"){
+                        dir("${WORKSPACE}/reports"){
                             deleteDir()
                             echo "Cleaned out reports directory"
                             bat "dir"
