@@ -100,7 +100,7 @@ pipeline {
                     }
                     post{
                         always{
-                            tee("logs/pippackages_system_${NODE_NAME}.log") {
+                            tee("${WORKSPACE}/logs/pippackages_system_${NODE_NAME}.log") {
                                 bat "${tool 'CPython-3.6'} -m pip list"
                             }
                             dir("logs"){
@@ -126,7 +126,7 @@ pipeline {
                     }
                     post{
                         success{
-                            tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+                            tee("${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log") {
                                 bat "venv\\Scripts\\pip.exe list"
                             }
                             dir("logs"){
