@@ -76,7 +76,7 @@ pipeline {
 
                         dir("dist"){
                             deleteDir()
-                            echo "Cleaned out distrubution directory"
+                            echo "Cleaned out distribution directory"
                             bat "dir"
                         }
 
