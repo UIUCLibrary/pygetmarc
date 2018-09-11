@@ -360,12 +360,6 @@ Report Directory   = ${reports_dir}
                     stages{
                         stage("Building DevPi Testing venv for .tar.gz package"){
                             steps{
-                                    bat "${tool 'CPython-3.6'} -m venv venv"
-                                    bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                            }
-                        }
-                        stage("DevPi Testing tar.gz package"){
-                            steps {
                                 bat "${tool 'CPython-3.6'} -m venv venv"
                                 bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
                                 bat "venv\\Scripts\\pip.exe install tox devpi-client"
@@ -374,12 +368,15 @@ Report Directory   = ${reports_dir}
 
                                 }
                                 bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                            }
+                        }
+                        stage("DevPi Testing tar.gz package"){
+                            steps {
+
 
                                 script {
-                                    def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
-                                    echo "return code was ${devpi_test_return_code}"
+                                    bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
                                 }
-                                echo "Finished testing Source Distribution: .tar.gz"
                             }
                         }
                     }
