@@ -129,7 +129,9 @@ pipeline {
                             tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
                                 bat "venv\\Scripts\\pip.exe list"
                             }
-                            archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
+                            dir("logs"){
+                                archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
+                            }
                         }
                     }
                 }
