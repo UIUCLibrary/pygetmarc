@@ -2,8 +2,9 @@
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
 
-def name = "unknown"
-def version = "unknown"
+def PKG_NAME = "unknown"
+def PKG_VERSION = "unknown"
+def DOC_ZIP_FILENAME = "doc.zip"
 
 def reports_dir = ""
 
@@ -42,106 +43,136 @@ pipeline {
     stages 
     {
         stage("Configure") {
-            steps {
-                // Set up the reports directory variable 
-                script{
-                    reports_dir = "${pwd tmp: true}\\reports"
-                }
-                
-                script{
-                    if (params.FRESH_WORKSPACE == true){
+            stages{
+
+                stage("Purge all existing data in workspace"){
+                    when{
+                        equals expected: true, actual: params.FRESH_WORKSPACE
+                    }
+                    steps{
                         deleteDir()
                         dir("source"){
                             checkout scm
-                            bat "dir"
-
                         }
-                        
                     }
                 }
+                stage("Cleanup"){
+                    steps {
+                        dir("logs"){
+                            deleteDir()
+                            echo "Cleaned out logs directory"
+                            bat "dir"
+                        }
 
-                dir(pwd(tmp: true)){
-                    dir("logs"){
-                        deleteDir()
+                        dir("logs"){
+                            deleteDir()
+                        }
+
+                        dir("build"){
+                            deleteDir()
+                            echo "Cleaned out build directory"
+                            bat "dir"
+                        }
+
+                        dir("dist"){
+                            deleteDir()
+                            echo "Cleaned out distribution directory"
+                            bat "dir"
+                        }
+
+                        dir("${WORKSPACE}/reports"){
+                            deleteDir()
+                            echo "Cleaned out reports directory"
+                            bat "dir"
+                        }
                     }
-                
-                }
-                dir("logs"){
-                    deleteDir()
-                }
-                
-                dir("build"){
-                    deleteDir()
-                    echo "Cleaned out build directory"
-                    bat "dir"
-                }
-
-                dir("dist"){
-                    deleteDir()
-                    echo "Cleaned out distrubution directory"
-                    bat "dir"
-                }
-
-                dir("${pwd tmp: true}/reports"){
-                    deleteDir()
-                    echo "Cleaned out reports directory"
-                    bat "dir"
-                }
-                lock("system_python_${NODE_NAME}"){
-                    bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
-                }
-
-
-                script {
-                    dir("source"){
-                        name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                        version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                    post{
+                        failure {
+                            deleteDir()
+                        }
                     }
                 }
-
-                tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
-                    bat "${tool 'CPython-3.6'} -m pip list"
-                }
-
-                bat "${tool 'CPython-3.6'} -m venv venv"
-                script {
-                    try {
-                        bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                stage("Installing required system level dependencies"){
+                    steps{
+                        lock("system_python_${NODE_NAME}"){
+                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                        }
                     }
-                    catch (exc) {
+                    post{
+                        always{
+                            tee("${WORKSPACE}/logs/pippackages_system_${NODE_NAME}.log") {
+                                bat "${tool 'CPython-3.6'} -m pip list"
+                            }
+                            dir("logs"){
+
+                                archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
+                            }
+                        }
+                    }
+                }
+                stage("Creating virtualenv for building"){
+                    steps{
                         bat "${tool 'CPython-3.6'} -m venv venv"
-                        bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                        script {
+                            try {
+                                bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                            }
+                            catch (exc) {
+                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                            }
+                        }
+                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
-                    
+                    post{
+                        success{
+                            tee("${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log") {
+                                bat "venv\\Scripts\\pip.exe list"
+                            }
+                            dir("logs"){
+                                archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
+                            }
+                        }
+                    }
+                }
+                stage("Logging into DevPi"){
+                    environment{
+                        DEVPI_PSWD = credentials('devpi-login')
+                    }
+                    steps{
+                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}\\certs\\"
+                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${env.DEVPI_PSWD} --clientdir ${WORKSPACE}\\certs\\"
+                    }
+                }
+                stage("Setting variables used by the rest of the build"){
 
-                }
-                
-                bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
 
-                tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
-                    bat "venv\\Scripts\\pip.exe list"
-                }
-                bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {    
-                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                }
-            }
-            post{
-                always{
-                    echo """Name               = ${name}
-Version            = ${version}
+                    steps {
+                        // Set up the reports directory variable
+                        script{
+                            reports_dir = "${WORKSPACE}\\reports"
+                        }
+
+                        script {
+                            dir("source"){
+                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                                DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
+                            }
+                        }
+                    }
+                    post{
+                        always{
+                            echo """Name               = ${PKG_NAME}
+Version            = ${PKG_VERSION}
+documentation zip file          = ${DOC_ZIP_FILENAME}
 Report Directory   = ${reports_dir}
-"""
-                    
-
-                    dir(pwd(tmp: true)){
-                        archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                        archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
-
+        """
+                        }
+                        failure {
+                            deleteDir()
+                        }
                     }
-                }
-                failure {
-                    deleteDir()
                 }
             }
 
@@ -187,14 +218,17 @@ Report Directory   = ${reports_dir}
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            script{
-                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-                                def alljob = env.JOB_NAME.tokenize("/") as String[]
-                                def project_name = alljob[0]
-                                dir('build/docs/') {
-                                    zip archive: true, dir: 'html', glob: '', zipFile: "${project_name}-${env.BRANCH_NAME}-docs-html-${env.GIT_COMMIT.substring(0,7)}.zip"
-                                }
+                            dir("${WORKSPACE}/dist"){
+                                    zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
                             }
+//                            script{
+//                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
+//                                def alljob = env.JOB_NAME.tokenize("/") as String[]
+//                                def project_name = alljob[0]
+//                                dir('build/docs/') {
+//                                    zip archive: true, dir: 'html', glob: '', zipFile: "DOC_ZIP_FILENAME"
+//                                }
+//                            }
                         }
                         failure{
                             echo "Failed to build Python package"
@@ -259,7 +293,7 @@ Report Directory   = ${reports_dir}
                             bat "dir"
                         }
                         script{
-                            tee("${pwd tmp: true}/logs/mypy.log") {
+                            tee("${WORKSPACE}/logs/mypy.log") {
                                 try{
                                     dir("source"){
                                         bat "dir"
@@ -273,8 +307,8 @@ Report Directory   = ${reports_dir}
                     }
                     post {
                         always {
-                            dir(pwd(tmp: true)){
-                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
+                            dir("${WORKSPACE}/logs"){
+                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'mypy.log']], unHealthy: ''
                             }
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
@@ -357,7 +391,7 @@ Report Directory   = ${reports_dir}
                 script {
                         bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                         try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist"
+                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
                         } catch (exc) {
                             echo "Unable to upload to devpi with docs."
                         }
@@ -402,7 +436,7 @@ Report Directory   = ${reports_dir}
                         }
                         stage("DevPi Testing tar.gz package"){
                             steps {
-                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
                             }
                         }
                     }
@@ -438,7 +472,7 @@ Report Directory   = ${reports_dir}
                         }
                         stage("DevPi Testing .zip package"){
                             steps {
-                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
                             }
                         }
                     }
@@ -467,7 +501,7 @@ Report Directory   = ${reports_dir}
                         }
                         stage("DevPi Testing .whl package"){
                             steps {
-                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl  --verbose"
                             }
                         }
                     }
@@ -480,7 +514,7 @@ Report Directory   = ${reports_dir}
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
@@ -497,12 +531,6 @@ Report Directory   = ${reports_dir}
                         equals expected: true, actual: params.DEPLOY_DOCS
                     }
                     steps{
-                        script {
-                            if(!params.BUILD_DOCS){
-                                bat "pipenv run python setup.py build_sphinx"
-                            }
-                        }
-                        
                         dir("build/docs/html/"){
                             input 'Update project documentation?'
                             sshPublisher(
@@ -540,13 +568,13 @@ Report Directory   = ${reports_dir}
                     }
                     steps {
                         script {
-                            input "Release ${name} ${version} to DevPi Production?"
+                            input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
                             }
 
                             bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} production/release"
+                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
                         }
                     }
                 }
@@ -573,7 +601,7 @@ Report Directory   = ${reports_dir}
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                     }
 
-                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
+                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
