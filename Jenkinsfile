@@ -150,7 +150,7 @@ pipeline {
                     steps {
                         // Set up the reports directory variable
                         script{
-                            reports_dir = "${pwd tmp: true}\\reports"
+                            reports_dir = "${WORKSPACE}\\reports"
                         }
 
                         script {
@@ -290,7 +290,7 @@ Report Directory   = ${reports_dir}
                             bat "dir"
                         }
                         script{
-                            tee("${pwd tmp: true}/logs/mypy.log") {
+                            tee("${WORKSPACE}/logs/mypy.log") {
                                 try{
                                     dir("source"){
                                         bat "dir"
@@ -304,8 +304,8 @@ Report Directory   = ${reports_dir}
                     }
                     post {
                         always {
-                            dir(pwd(tmp: true)){
-                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
+                            dir("${WORKSPACE}/logs"){
+                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'mypy.log']], unHealthy: ''
                             }
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
