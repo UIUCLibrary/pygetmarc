@@ -103,7 +103,10 @@ pipeline {
                             tee("logs/pippackages_system_${NODE_NAME}.log") {
                                 bat "${tool 'CPython-3.6'} -m pip list"
                             }
-                            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
+                            dir("logs"){
+
+                                archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
+                            }
                         }
                     }
                 }
