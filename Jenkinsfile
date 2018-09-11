@@ -321,7 +321,7 @@ Report Directory   = ${reports_dir}
                 bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    
+
                 }
                 bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                 script {
@@ -357,24 +357,33 @@ Report Directory   = ${reports_dir}
                     options {
                         skipDefaultCheckout(true)
                     }
-                    steps {
-                        
-                        echo "Testing Source tar.gz package in devpi"
-                        
-                        bat "${tool 'CPython-3.6'} -m venv venv"
-                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    
+                    stages{
+                        stage("Building DevPi Testing venv for .tar.gz package"){
+                            steps{
+                                    bat "${tool 'CPython-3.6'} -m venv venv"
+                                    bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                            }
                         }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        stage("DevPi Testing tar.gz package"){
+                            steps {
+                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
 
-                        script {                          
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
-                            echo "return code was ${devpi_test_return_code}"
+                                }
+                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+
+                                script {
+                                    def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
+                                    echo "return code was ${devpi_test_return_code}"
+                                }
+                                echo "Finished testing Source Distribution: .tar.gz"
+                            }
                         }
-                        echo "Finished testing Source Distribution: .tar.gz"
                     }
+
                     post {
                         failure {
                             echo "Tests for .tar.gz source on DevPi failed."
