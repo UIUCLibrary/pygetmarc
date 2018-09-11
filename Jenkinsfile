@@ -2,8 +2,9 @@
 @Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 import org.ds.*
 
-def name = "unknown"
-def version = "unknown"
+def PKG_NAME = "unknown"
+def PKG_VERSION = "unknown"
+def DOC_ZIP_FILENAME = "doc.zip"
 
 def reports_dir = ""
 
@@ -102,26 +103,12 @@ pipeline {
                             tee("logs/pippackages_system_${NODE_NAME}.log") {
                                 bat "${tool 'CPython-3.6'} -m pip list"
                             }
+                            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                         }
                     }
                 }
-                stage("setup"){
-
-
-                    steps {
-                        // Set up the reports directory variable
-                        script{
-                            reports_dir = "${pwd tmp: true}\\reports"
-                        }
-
-=
-                        script {
-                            dir("source"){
-                                name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                                version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
-                            }
-                        }
-
+                stage("Creating virtualenv for building"){
+                    steps{
                         bat "${tool 'CPython-3.6'} -m venv venv"
                         script {
                             try {
@@ -131,33 +118,50 @@ pipeline {
                                 bat "${tool 'CPython-3.6'} -m venv venv"
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
-
-
                         }
-
                         bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
-
-                        tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
-                            bat "venv\\Scripts\\pip.exe list"
+                    }
+                    post{
+                        success{
+                            tee("${pwd tmp: true}/logs/pippackages_venv_${NODE_NAME}.log") {
+                                bat "venv\\Scripts\\pip.exe list"
+                            }
+                            archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
                         }
-                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    }
+                }
+                stage("Logging into DevPi"){
+                    environment{
+                        DEVPI_PSWD = credentials('devpi-login')
+                    }
+                    steps{
+                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}\\certs\\"
+                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${env.DEVPI_PSWD} --clientdir ${WORKSPACE}\\certs\\"
+                    }
+                }
+                stage("Setting variables used by the rest of the build"){
+
+
+                    steps {
+                        // Set up the reports directory variable
+                        script{
+                            reports_dir = "${pwd tmp: true}\\reports"
+                        }
+
+                        script {
+                            dir("source"){
+                                name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
+                                version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                            }
                         }
                     }
                     post{
                         always{
-                            echo """Name               = ${name}
-        Version            = ${version}
-        Report Directory   = ${reports_dir}
+                            echo """Name               = ${PKG_NAME}
+Version            = ${PKG_VERSION}
+documentation zip file          = ${DOC_ZIP_FILENAME}
+Report Directory   = ${reports_dir}
         """
-
-
-                            dir(pwd(tmp: true)){
-                                archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                                archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"
-
-                            }
                         }
                         failure {
                             deleteDir()
@@ -423,7 +427,7 @@ pipeline {
                         }
                         stage("DevPi Testing tar.gz package"){
                             steps {
-                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
                             }
                         }
                     }
@@ -459,7 +463,7 @@ pipeline {
                         }
                         stage("DevPi Testing .zip package"){
                             steps {
-                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
                             }
                         }
                     }
@@ -488,7 +492,7 @@ pipeline {
                         }
                         stage("DevPi Testing .whl package"){
                             steps {
-                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl  --verbose"
                             }
                         }
                     }
@@ -501,7 +505,7 @@ pipeline {
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
@@ -561,13 +565,13 @@ pipeline {
                     }
                     steps {
                         script {
-                            input "Release ${name} ${version} to DevPi Production?"
+                            input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                 bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
                             }
 
                             bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${name}==${version} production/release"
+                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
                         }
                     }
                 }
@@ -594,7 +598,7 @@ pipeline {
                         bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                     }
 
-                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${name}==${version}"
+                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
