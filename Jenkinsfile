@@ -301,6 +301,11 @@ Report Directory   = ${reports_dir}
                             }
                             bat "del reports\\coverage.xml"
                         }
+                        failure{
+                            dir("${WORKSPACE}/reports"){
+                                bat "tree /A /F"
+                            }
+                        }
                     }
                 }
 
