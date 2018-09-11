@@ -280,12 +280,35 @@ Report Directory   = ${reports_dir}
                     steps {
                         dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
-                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/ --cov=uiucprescon"
+                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon"
                         }
                     }
                     post {
                         always{
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+
+                            dir("${WORKSPACE}/reports/"){
+                                junit "junit-${env.NODE_NAME}-pytest.xml"
+                            }
+
+                            script {
+                                try{
+                                    publishCoverage
+                                        autoDetectPath: 'coverage*/*.xml'
+                                        adapters: [
+                                            cobertura(coberturaReportFile:"reports/coverage.xml")
+                                        ]
+                                } catch(exc){
+                                    echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                                }
+                            }
+                            bat "del reports\\coverage.xml"
+                        }
+                        failure{
+                            dir("${WORKSPACE}/reports"){
+                                bat "tree /A /F"
+                            }
                         }
                     }
                 }
@@ -321,7 +344,7 @@ Report Directory   = ${reports_dir}
                 bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                     bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    
+
                 }
                 bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                 script {
@@ -357,27 +380,26 @@ Report Directory   = ${reports_dir}
                     options {
                         skipDefaultCheckout(true)
                     }
-                    environment {
-                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
-                    }
-                    steps {
-                        
-                        echo "Testing Source tar.gz package in devpi"
-                        
-                        bat "${tool 'CPython-3.6'} -m venv venv"
-                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                    
-                        }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                    stages{
+                        stage("Building DevPi Testing venv for .tar.gz package"){
+                            steps{
+                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
 
-                        script {                          
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
-                            echo "return code was ${devpi_test_return_code}"
+                                }
+                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                            }
                         }
-                        echo "Finished testing Source Distribution: .tar.gz"
+                        stage("DevPi Testing tar.gz package"){
+                            steps {
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s tar.gz  --verbose"
+                            }
+                        }
                     }
+
                     post {
                         failure {
                             echo "Tests for .tar.gz source on DevPi failed."
@@ -394,26 +416,23 @@ Report Directory   = ${reports_dir}
                     options {
                         skipDefaultCheckout(true)
                     }
-                    environment {
-                        PATH = "${tool 'cmake3.11.1'}//..//;$PATH"
-                    }
-                    steps {
-                        echo "Testing Source zip package in devpi"
-                        bat "${tool 'CPython-3.6'} -m venv venv"
-                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                    stages{
+                        stage("Building DevPi Testing venv for .zip package"){
+                            steps{
+                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+
+                                }
+                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                            }
                         }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        script {
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
-                            echo "return code was ${devpi_test_return_code}"
-                        }
-                        echo "Finished testing Source Distribution: .zip"
-                    }
-                    post {
-                        failure {
-                            echo "Tests for .zip source on DevPi failed."
+                        stage("DevPi Testing .zip package"){
+                            steps {
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s zip --verbose"
+                            }
                         }
                     }
                 }
@@ -426,23 +445,23 @@ Report Directory   = ${reports_dir}
                     options {
                         skipDefaultCheckout(true)
                     }
-                    steps {
-                        echo "Testing Whl package in devpi"
-                        bat "${tool 'CPython-3.6'} -m venv venv"
-                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
+                    stages{
+                        stage("Building DevPi Testing venv for .whl package"){
+                            steps{
+                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+
+                                }
+                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                            }
                         }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        script{
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
-                            echo "return code was ${devpi_test_return_code}"
-                        }
-                        echo "Finished testing Built Distribution: .whl"
-                    }
-                    post {
-                        failure {
-                            echo "Tests for whl on DevPi failed."
+                        stage("DevPi Testing .whl package"){
+                            steps {
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
+                            }
                         }
                     }
                 }
