@@ -55,16 +55,8 @@ pipeline {
                         }
                     }
                 }
-                stage("setup"){
-
-
+                stage("Cleanup"){
                     steps {
-                        // Set up the reports directory variable
-                        script{
-                            reports_dir = "${pwd tmp: true}\\reports"
-                        }
-
-
                         dir(pwd(tmp: true)){
                             dir("logs"){
                                 deleteDir()
@@ -92,6 +84,24 @@ pipeline {
                             echo "Cleaned out reports directory"
                             bat "dir"
                         }
+                    }
+                    post{
+                        failure {
+                            deleteDir()
+                        }
+                    }
+                }
+                stage("setup"){
+
+
+                    steps {
+                        // Set up the reports directory variable
+                        script{
+                            reports_dir = "${pwd tmp: true}\\reports"
+                        }
+
+
+
                         lock("system_python_${NODE_NAME}"){
                             bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
                         }
