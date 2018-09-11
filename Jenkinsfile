@@ -286,7 +286,11 @@ Report Directory   = ${reports_dir}
                     post {
                         always{
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
-                            junit "${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml"
+
+                            dir("${WORKSPACE}/reports/"){
+                                junit "junit-${env.NODE_NAME}-pytest.xml"
+                            }
+
                             script {
                                 try{
                                     publishCoverage
