@@ -211,7 +211,14 @@ Report Directory   = ${reports_dir}
                     }
                     steps {
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\activate.bat && tox --workdir ${WORKSPACE}\\.tox"
+                            script{
+                                try{
+                                    bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                                } catch (exc){
+                                    bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox --recreate"
+                                }
+
+                            }
                         }
                         
                     }
