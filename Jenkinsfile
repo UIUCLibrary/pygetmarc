@@ -412,11 +412,6 @@ Report Directory   = ${reports_dir}
                             }
                         }
                     }
-//                    post {
-//                        failure {
-//                            echo "Tests for .zip source on DevPi failed."
-//                        }
-//                    }
                 }
                 stage("Built Distribution: .whl") {
                     agent {
@@ -427,25 +422,44 @@ Report Directory   = ${reports_dir}
                     options {
                         skipDefaultCheckout(true)
                     }
-                    steps {
-                        echo "Testing Whl package in devpi"
-                        bat "${tool 'CPython-3.6'} -m venv venv"
-                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"                        
+                    stages{
+                        stage("Building DevPi Testing venv for .whl package"){
+                            steps{
+                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+
+                                }
+                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                            }
                         }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        script{
-                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
-                            echo "return code was ${devpi_test_return_code}"
+                        stage("DevPi Testing .zip package"){
+                            steps {
+                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
+                            }
                         }
-                        echo "Finished testing Built Distribution: .whl"
                     }
-                    post {
-                        failure {
-                            echo "Tests for whl on DevPi failed."
-                        }
-                    }
+//                    steps {
+//                        echo "Testing Whl package in devpi"
+//                        bat "${tool 'CPython-3.6'} -m venv venv"
+//                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
+//                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+//                        }
+//                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+//                        script{
+//                            def devpi_test_return_code = bat returnStatus: true, script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${name} -s whl  --verbose"
+//                            echo "return code was ${devpi_test_return_code}"
+//                        }
+//                        echo "Finished testing Built Distribution: .whl"
+//                    }
+//                    post {
+//                        failure {
+//                            echo "Tests for whl on DevPi failed."
+//                        }
+//                    }
                 }
             }
             post {
