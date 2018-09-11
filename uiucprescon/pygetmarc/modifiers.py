@@ -1,4 +1,5 @@
 import abc
+import re
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
 
@@ -66,9 +67,14 @@ class Reflow(AbsEnrichment):
     """Parses and re-renders the xml text. Useful for cleaning up after
     using modifiers.
     """
+    remove_whitespace_regex = re.compile(">\s*<")
 
     def enrich(self, src: str) -> str:
-        reparsed = minidom.parseString(src.replace("\n", ""))
+        no_line_endings = src.replace("\n", "")
+        no_extra_whitespace = \
+            Reflow.remove_whitespace_regex.sub("><", no_line_endings)
+        # = re.sub(Reflow.remove_whitespace_regex, )
+        reparsed = minidom.parseString(no_extra_whitespace)
 
         # declaring the encoding forces it to be in the xml declaration
         with_dec = reparsed.toprettyxml(indent="  ", encoding="utf-8")
