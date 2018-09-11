@@ -554,4 +554,6 @@ def test_reflow():
     """
     reflowr = pygetmarc.modifiers.Reflow()
     transformed = reflowr.enrich(source)
-    print(transformed)
+    for line_number, line in enumerate(transformed.split("\n")):
+        print("{}:{}".format(line_number+1, line))
+
