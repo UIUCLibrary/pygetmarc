@@ -91,6 +91,20 @@ pipeline {
                         }
                     }
                 }
+                stage("Installing required system level dependencies"){
+                    steps{
+                        lock("system_python_${NODE_NAME}"){
+                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                        }
+                    }
+                    post{
+                        always{
+                            tee("logs/pippackages_system_${NODE_NAME}.log") {
+                                bat "${tool 'CPython-3.6'} -m pip list"
+                            }
+                        }
+                    }
+                }
                 stage("setup"){
 
 
@@ -100,22 +114,12 @@ pipeline {
                             reports_dir = "${pwd tmp: true}\\reports"
                         }
 
-
-
-                        lock("system_python_${NODE_NAME}"){
-                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
-                        }
-
-
+=
                         script {
                             dir("source"){
                                 name = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
                                 version = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
                             }
-                        }
-
-                        tee("${pwd tmp: true}/logs/pippackages_system_${NODE_NAME}.log") {
-                            bat "${tool 'CPython-3.6'} -m pip list"
                         }
 
                         bat "${tool 'CPython-3.6'} -m venv venv"
