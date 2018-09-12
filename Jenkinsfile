@@ -28,11 +28,11 @@ pipeline {
     parameters {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
         string(name: "PROJECT_NAME", defaultValue: "pyGetMarc", description: "Name given to the project")
-        booleanParam(name: "UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
         booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
         booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
         booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
         booleanParam(name: "TEST_RUN_INTEGRATION", defaultValue: true, description: "Run integration tests")
+        booleanParam(name: "TEST_RUN_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a package")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
@@ -321,7 +321,7 @@ Report Directory   = ${reports_dir}
                     steps {
                         dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
-                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon"
+                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/unit_tests_coverage.xml --cov=uiucprescon"
                         }
                     }
                     post {
@@ -337,14 +337,53 @@ Report Directory   = ${reports_dir}
                                     publishCoverage
                                         autoDetectPath: 'coverage*/*.xml'
                                         adapters: [
-                                            cobertura(coberturaReportFile:"reports/coverage.xml")
+                                            cobertura(coberturaReportFile:"reports/unit_tests_coverage.xml")
                                         ]
                                 } catch(exc){
                                     echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
                                     cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
                                 }
                             }
-                            bat "del reports\\coverage.xml"
+                            bat "del reports\\unit_tests_coverage.xml"
+                        }
+                        failure{
+                            dir("${WORKSPACE}/reports"){
+                                bat "tree /A /F"
+                            }
+                        }
+                    }
+                }
+                stage("Run Unit tests") {
+                    when {
+                        equals expected: true, actual: params.TEST_RUN_UNIT_TESTS
+                    }
+                    steps {
+                        dir("source"){
+                            bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
+                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/unit_tests_coverage.xml --cov=uiucprescon"
+                        }
+                    }
+                    post {
+                        always{
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+
+                            dir("${WORKSPACE}/reports/"){
+                                junit "junit-${env.NODE_NAME}-pytest.xml"
+                            }
+
+                            script {
+                                try{
+                                    publishCoverage
+                                        autoDetectPath: 'coverage*/*.xml'
+                                        adapters: [
+                                            cobertura(coberturaReportFile:"reports/unit_tests_coverage.xml")
+                                        ]
+                                } catch(exc){
+                                    echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                                }
+                            }
+                            bat "del reports\\unit_tests_coverage.xml"
                         }
                         failure{
                             dir("${WORKSPACE}/reports"){
