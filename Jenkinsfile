@@ -337,7 +337,7 @@ Report Directory   = ${reports_dir}
                                     publishCoverage
                                         autoDetectPath: 'coverage*/*.xml'
                                         adapters: [
-                                            cobertura(coberturaReportFile:"reports/unit_tests_coverage.xml")
+                                            cobertura(coberturaReportFile:"reports/integration_tests_coverage.xml")
                                         ]
                                 } catch(exc){
                                     echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
