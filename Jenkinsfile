@@ -332,18 +332,18 @@ Report Directory   = ${reports_dir}
                                 junit "junit-${env.NODE_NAME}-pytest.xml"
                             }
 
-                            script {
-                                try{
-                                    publishCoverage
-                                        autoDetectPath: 'coverage*/*.xml'
-                                        adapters: [
-                                            cobertura(coberturaReportFile:"reports/coverage.xml")
-                                        ]
-                                } catch(exc){
-                                    echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-                                }
-                            }
+//                            script {
+//                                try{
+//                                    publishCoverage
+//                                        autoDetectPath: 'coverage*/*.xml'
+//                                        adapters: [
+//                                            cobertura(coberturaReportFile:"reports/coverage.xml")
+//                                        ]
+//                                } catch(exc){
+//                                    echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+//                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+//                                }
+//                            }
                         }
                         failure{
                             dir("${WORKSPACE}/reports"){
@@ -364,37 +364,13 @@ Report Directory   = ${reports_dir}
                     }
                     post {
                         always{
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-Unit tests', reportTitles: ''])
 
                             dir("${WORKSPACE}/reports/"){
                                 junit "junit-${env.NODE_NAME}-pytest.xml"
                             }
 
-                            script {
-                                try{
-                                    publishCoverage
-                                        autoDetectPath: 'coverage*/*.xml'
-                                        adapters: [
-                                            cobertura(coberturaReportFile:"reports/coverage.xml")
-                                        ]
-                                } catch(exc){
-                                    echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                                    cobertura(
-                                        autoUpdateHealth: false,
-                                        autoUpdateStability: false,
-                                        coberturaReportFile: "reports/coverage.xml",
-                                        conditionalCoverageTargets: '70, 0, 0',
-                                        failUnhealthy: false,
-                                        failUnstable: false,
-                                        lineCoverageTargets: '80, 0, 0',
-                                        maxNumberOfBuilds: 0,
-                                        methodCoverageTargets: '80, 0, 0',
-                                        onlyStable: false,
-                                        sourceEncoding: 'ASCII',
-                                        zoomCoverageChart: false
-                                    )
-                                }
-                            }
+
 
                         }
                         failure{
@@ -406,6 +382,33 @@ Report Directory   = ${reports_dir}
                 }
             }
             post{
+                always{
+                    script {
+                        try{
+                            publishCoverage
+                                autoDetectPath: 'coverage*/*.xml'
+                                adapters: [
+                                    cobertura(coberturaReportFile:"reports/coverage.xml")
+                                ]
+                        } catch(exc){
+                            echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+                            cobertura(
+                                autoUpdateHealth: false,
+                                autoUpdateStability: false,
+                                coberturaReportFile: "reports/coverage.xml",
+                                conditionalCoverageTargets: '70, 0, 0',
+                                failUnhealthy: false,
+                                failUnstable: false,
+                                lineCoverageTargets: '80, 0, 0',
+                                maxNumberOfBuilds: 0,
+                                methodCoverageTargets: '80, 0, 0',
+                                onlyStable: false,
+                                sourceEncoding: 'ASCII',
+                                zoomCoverageChart: false
+                            )
+                        }
+                    }
+                }
                 cleanup{
                     bat "del reports\\coverage.xml"
                 }
