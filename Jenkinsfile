@@ -321,7 +321,7 @@ Report Directory   = ${reports_dir}
                     steps {
                         dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
-                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/integration_tests_coverage.xml --cov=uiucprescon"
+                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
                         }
                     }
                     post {
@@ -337,14 +337,13 @@ Report Directory   = ${reports_dir}
                                     publishCoverage
                                         autoDetectPath: 'coverage*/*.xml'
                                         adapters: [
-                                            cobertura(coberturaReportFile:"reports/integration_tests_coverage.xml")
+                                            cobertura(coberturaReportFile:"reports/coverage.xml")
                                         ]
                                 } catch(exc){
                                     echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/integration_tests_coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
+                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
                                 }
                             }
-                            bat "del reports\\integration_tests_coverage.xml"
                         }
                         failure{
                             dir("${WORKSPACE}/reports"){
@@ -360,7 +359,7 @@ Report Directory   = ${reports_dir}
                     steps {
                         dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
-                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/unit_tests_coverage.xml --cov=uiucprescon"
+                            bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
                         }
                     }
                     post {
@@ -376,14 +375,14 @@ Report Directory   = ${reports_dir}
                                     publishCoverage
                                         autoDetectPath: 'coverage*/*.xml'
                                         adapters: [
-                                            cobertura(coberturaReportFile:"reports/unit_tests_coverage.xml")
+                                            cobertura(coberturaReportFile:"reports/coverage.xml")
                                         ]
                                 } catch(exc){
                                     echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
                                     cobertura(
                                         autoUpdateHealth: false,
                                         autoUpdateStability: false,
-                                        coberturaReportFile: "reports/unit_tests_coverage.xml",
+                                        coberturaReportFile: "reports/coverage.xml",
                                         conditionalCoverageTargets: '70, 0, 0',
                                         failUnhealthy: false,
                                         failUnstable: false,
@@ -396,7 +395,7 @@ Report Directory   = ${reports_dir}
                                     )
                                 }
                             }
-                            bat "del reports\\unit_tests_coverage.xml"
+
                         }
                         failure{
                             dir("${WORKSPACE}/reports"){
@@ -405,7 +404,11 @@ Report Directory   = ${reports_dir}
                         }
                     }
                 }
-
+            }
+            post{
+                cleanup{
+                    bat "del reports\\coverage.xml"
+                }
             }
         }
     
