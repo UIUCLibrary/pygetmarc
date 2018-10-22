@@ -1,6 +1,6 @@
 #!groovy
-@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
-import org.ds.*
+//@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
+//import org.ds.*
 
 def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
@@ -100,13 +100,10 @@ pipeline {
                     }
                     post{
                         always{
-                            tee("${WORKSPACE}/logs/pippackages_system_${NODE_NAME}.log") {
-                                bat "${tool 'CPython-3.6'} -m pip list"
+                            lock("system_python_${NODE_NAME}"){
+                                bat "${tool 'CPython-3.6'} -m pip list > logs/pippackages_system_${NODE_NAME}.log"
                             }
-                            dir("logs"){
-
-                                archiveArtifacts artifacts: "pippackages_system_${NODE_NAME}.log"
-                            }
+                            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                         }
                     }
                 }
@@ -125,13 +122,9 @@ pipeline {
                         bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
                     post{
-                        success{
-                            tee("${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log") {
-                                bat "venv\\Scripts\\pip.exe list"
-                            }
-                            dir("logs"){
-                                archiveArtifacts artifacts: "pippackages_venv_${NODE_NAME}.log"
-                            }
+                        success{                            
+                            bat "venv\\Scripts\\pip.exe list > ${WORKSPACE}/logs/pippackages_venv_${NODE_NAME}.log"
+                            archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"                            
                         }
                     }
                 }
@@ -149,9 +142,9 @@ pipeline {
 
                     steps {
                         // Set up the reports directory variable
-                        script{
-                            reports_dir = "${WORKSPACE}\\reports"
-                        }
+                        // script{
+                        //     reports_dir = "${WORKSPACE}\\reports"
+                        // }
 
                         script {
                             dir("source"){
@@ -166,7 +159,6 @@ pipeline {
                             echo """Name               = ${PKG_NAME}
 Version            = ${PKG_VERSION}
 documentation zip file          = ${DOC_ZIP_FILENAME}
-Report Directory   = ${reports_dir}
         """
                         }
                         failure {
@@ -183,16 +175,17 @@ Report Directory   = ${reports_dir}
                 stage("Python Package"){
                     steps {
                         
-                        tee('logs/build.log') {
-                            dir("source"){
-                                bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build"
-                            }
+                        
+                        dir("source"){
+                            powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
+                            // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build"
                         }
+                        
                     }
                     post{
                         always{
                             warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
-                            archiveArtifacts artifacts: "logs/*.log"
+                            archiveArtifacts artifacts: "logs/build.log"
                         }
                         failure{
                             echo "Failed to build Python package"
@@ -205,11 +198,12 @@ Report Directory   = ${reports_dir}
                 stage("Sphinx documentation"){
                     steps {
                         echo "Building docs on ${env.NODE_NAME}"
-                        tee('logs/build_sphinx.log') {
-                            dir("source"){
-                                bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
-                            }   
-                        }
+                        // tee('logs/build_sphinx.log') {
+                        dir("source"){
+                            // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
+                            powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | tee logs/build_sphinx.log"
+                        }   
+                    // }
                     }
                     post{
                         always {
@@ -218,17 +212,8 @@ Report Directory   = ${reports_dir}
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            dir("${WORKSPACE}/dist"){
-                                    zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "${DOC_ZIP_FILENAME}"
-                            }
-//                            script{
-//                                // Multibranch jobs add the slash and add the branch to the job name. I need only the job name
-//                                def alljob = env.JOB_NAME.tokenize("/") as String[]
-//                                def project_name = alljob[0]
-//                                dir('build/docs/') {
-//                                    zip archive: true, dir: 'html', glob: '', zipFile: "DOC_ZIP_FILENAME"
-//                                }
-//                            }
+                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            stash includes: 'build/docs/html/**', name: 'docs'
                         }
                         failure{
                             echo "Failed to build Python package"
@@ -274,11 +259,11 @@ Report Directory   = ${reports_dir}
                     }
                     post{
                         always {
-                            bat "move build\\docs\\output.txt ${reports_dir}\\doctest.txt"
-                            dir("${reports_dir}"){
-                                bat "dir"
-                                archiveArtifacts artifacts: "doctest.txt"
-                            }
+                            bat "move build\\docs\\output.txt reports\\doctest.txt"
+                            // dir("${reports_dir}"){
+                                // bat "dir"
+                            archiveArtifacts artifacts: "reports/doctest.txt"
+                            // }
 
                         }
                     }
@@ -293,23 +278,23 @@ Report Directory   = ${reports_dir}
                             bat "dir"
                         }
                         script{
-                            tee("${WORKSPACE}/logs/mypy.log") {
-                                try{
-                                    dir("source"){
-                                        bat "dir"
-                                        bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html"
-                                    }
-                                } catch (exc) {
-                                    echo "MyPy found some warnings"
+                            // tee("${WORKSPACE}/logs/mypy.log") {
+                            try{
+                                dir("source"){
+                                    bat "dir"
+                                    bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
+                            } catch (exc) {
+                                echo "MyPy found some warnings"
                             }
+                            // }
                         }
                     }
                     post {
                         always {
-                            dir("${WORKSPACE}/logs"){
-                                warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'mypy.log']], unHealthy: ''
-                            }
+                            // dir("${WORKSPACE}/logs"){
+                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
+                            // }
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
@@ -330,9 +315,9 @@ Report Directory   = ${reports_dir}
                         always{
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
 
-                            dir("${WORKSPACE}/reports/"){
-                                junit "junit-${env.NODE_NAME}-pytest.xml"
-                            }
+                            // dir("${WORKSPACE}/reports/"){
+                                junit "reports/junit-${env.NODE_NAME}-pytest.xml"
+                            // }
 
 //                            script {
 //                                try{
@@ -347,11 +332,11 @@ Report Directory   = ${reports_dir}
 //                                }
 //                            }
                         }
-                        failure{
-                            dir("${WORKSPACE}/reports"){
-                                bat "tree /A /F"
-                            }
-                        }
+                        // failure{
+                        //     dir("${WORKSPACE}/reports"){
+                        //         bat "tree /A /F"
+                        //     }
+                        // }
                     }
                 }
                 stage("Run Unit tests") {
@@ -369,18 +354,7 @@ Report Directory   = ${reports_dir}
                     post {
                         always{
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-Unit tests', reportTitles: ''])
-
-                            dir("${WORKSPACE}/reports/"){
-                                junit "junit-${env.NODE_NAME}-pytest.xml"
-                            }
-
-
-
-                        }
-                        failure{
-                            dir("${WORKSPACE}/reports"){
-                                bat "tree /A /F"
-                            }
+                                junit "reports/junit-${env.NODE_NAME}-pytest.xml"
                         }
                     }
                 }
@@ -424,11 +398,11 @@ Report Directory   = ${reports_dir}
                 dir("source"){
                     bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
                 }
-
-                dir("dist") {
-                    archiveArtifacts artifacts: "*.whl", fingerprint: true
-                    archiveArtifacts artifacts: "*.tar.gz", fingerprint: true
-                    archiveArtifacts artifacts: "*.zip", fingerprint: true
+            }
+            post{
+                success{
+                    archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
+                    stash includes: 'dist/*.*', name: "dist"
                 }
             }
         }
