@@ -143,11 +143,6 @@ pipeline {
 
 
                     steps {
-                        // Set up the reports directory variable
-                        // script{
-                        //     reports_dir = "${WORKSPACE}\\reports"
-                        // }
-
                         script {
                             dir("source"){
                                 PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
@@ -180,7 +175,6 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                         
                         dir("source"){
                             powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
-                            // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build"
                         }
                         
                     }
@@ -246,7 +240,6 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     post {
                         failure {
                             archiveArtifacts artifacts: ".tox/py36/log/*.log", allowEmptyArchive: true
-                            // bat "@RD /S /Q ${WORKSPACE}\\.tox"
                         }
                     }
                 }
@@ -262,10 +255,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     post{
                         always {
                             bat "move build\\docs\\output.txt reports\\doctest.txt"
-                            // dir("${reports_dir}"){
-                                // bat "dir"
                             archiveArtifacts artifacts: "reports/doctest.txt"
-                            // }
 
                         }
                     }
@@ -280,7 +270,6 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                             bat "dir"
                         }
                         script{
-                            // tee("${WORKSPACE}/logs/mypy.log") {
                             try{
                                 dir("source"){
                                     bat "dir"
@@ -289,14 +278,11 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                             } catch (exc) {
                                 echo "MyPy found some warnings"
                             }
-                            // }
                         }
                     }
                     post {
                         always {
-                            // dir("${WORKSPACE}/logs"){
                             warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
-                            // }
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                         }
                     }
@@ -316,29 +302,8 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     post {
                         always{
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
-
-                            // dir("${WORKSPACE}/reports/"){
-                                junit "reports/junit-${env.NODE_NAME}-pytest.xml"
-                            // }
-
-//                            script {
-//                                try{
-//                                    publishCoverage
-//                                        autoDetectPath: 'coverage*/*.xml'
-//                                        adapters: [
-//                                            cobertura(coberturaReportFile:"reports/coverage.xml")
-//                                        ]
-//                                } catch(exc){
-//                                    echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-//                                    cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: "reports/coverage.xml", conditionalCoverageTargets: '70, 0, 0', failUnhealthy: false, failUnstable: false, lineCoverageTargets: '80, 0, 0', maxNumberOfBuilds: 0, methodCoverageTargets: '80, 0, 0', onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false
-//                                }
-//                            }
+                            junit "reports/junit-${env.NODE_NAME}-pytest.xml"
                         }
-                        // failure{
-                        //     dir("${WORKSPACE}/reports"){
-                        //         bat "tree /A /F"
-                        //     }
-                        // }
                     }
                 }
                 stage("Run Unit tests") {
@@ -482,7 +447,6 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                                     pkgVersion: "${PKG_VERSION}",
                                     pkgRegex: "tar.gz"
                                 )
-//                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s tar.gz  --verbose"
                             }
                         }
                     }
@@ -526,7 +490,6 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                                     pkgVersion: "${PKG_VERSION}",
                                     pkgRegex: "zip"
                                 )
-//                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s zip --verbose"
                             }
                         }
                     }
@@ -563,7 +526,6 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                                     pkgVersion: "${PKG_VERSION}",
                                     pkgRegex: "whl"
                                 )
-//                                bat script: "venv\\Scripts\\devpi.exe test --index https://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}_staging ${PKG_NAME} -s whl  --verbose"
                             }
                         }
                     }
