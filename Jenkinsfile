@@ -1,6 +1,7 @@
 #!groovy
 //@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
 //import org.ds.*
+@Library("devpi") _
 
 def PKG_NAME = "unknown"
 def PKG_VERSION = "unknown"
@@ -61,29 +62,30 @@ pipeline {
                         dir("logs"){
                             deleteDir()
                             echo "Cleaned out logs directory"
-                            bat "dir"
+                            bat "dir > nul"
                         }
 
                         dir("logs"){
                             deleteDir()
+                            bat "dir > nul"
                         }
 
                         dir("build"){
                             deleteDir()
                             echo "Cleaned out build directory"
-                            bat "dir"
+                            bat "dir > nul"
                         }
 
                         dir("dist"){
                             deleteDir()
                             echo "Cleaned out distribution directory"
-                            bat "dir"
+                            bat "dir > nul"
                         }
 
                         dir("${WORKSPACE}/reports"){
                             deleteDir()
                             echo "Cleaned out reports directory"
-                            bat "dir"
+                            bat "dir > nul"
                         }
                     }
                     post{
