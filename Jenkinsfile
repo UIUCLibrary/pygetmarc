@@ -121,7 +121,7 @@ pipeline {
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv\\Scripts\\pip.exe install devpi-client pytest pytest-cov lxml -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
                     post{
                         success{                            
