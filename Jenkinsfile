@@ -97,13 +97,13 @@ pipeline {
                 stage("Installing required system level dependencies"){
                     steps{
                         lock("system_python_${NODE_NAME}"){
-                            bat "${tool 'CPython-3.6'} -m pip install --upgrade pip --quiet"
+                            bat "${tool 'CPython-3.6'}\\python -m pip install --upgrade pip --quiet"
                         }
                     }
                     post{
                         always{
                             lock("system_python_${NODE_NAME}"){
-                                bat "${tool 'CPython-3.6'} -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+                                bat "${tool 'CPython-3.6'}\\python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
                             }
                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                         }
@@ -111,17 +111,17 @@ pipeline {
                 }
                 stage("Creating virtualenv for building"){
                     steps{
-                        bat "${tool 'CPython-3.6'} -m venv venv"
+                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
                         script {
                             try {
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip"
                             }
                             catch (exc) {
-                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv\\Scripts\\pip.exe install devpi-client -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv\\Scripts\\pip.exe install devpi-client pytest pytest-cov lxml -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
                     post{
                         success{                            
@@ -145,8 +145,8 @@ pipeline {
                     steps {
                         script {
                             dir("source"){
-                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}  setup.py --name").trim()
-                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'} setup.py --version").trim()
+                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python  setup.py --name").trim()
+                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python setup.py --version").trim()
                                 DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
                             }
                         }
@@ -427,7 +427,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     stages{
                         stage("Building DevPi Testing venv for .tar.gz package"){
                             steps{
-                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
                                 bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
                                 bat "venv\\Scripts\\pip.exe install tox devpi-client"
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
@@ -470,7 +470,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     stages{
                         stage("Building DevPi Testing venv for .zip package"){
                             steps{
-                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
                                 bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
                                 bat "venv\\Scripts\\pip.exe install tox devpi-client"
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
@@ -506,7 +506,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     stages{
                         stage("Building DevPi Testing venv for .whl package"){
                             steps{
-                                bat "${tool 'CPython-3.6'} -m venv venv"
+                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
                                 bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
                                 bat "venv\\Scripts\\pip.exe install tox devpi-client"
                                 withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
