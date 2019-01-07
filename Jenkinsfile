@@ -467,42 +467,6 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                             }
 
                         }
-                        stage("Source Distribution: .zip") {
-                            agent {
-                                node {
-                                    label "Windows && Python3"
-                                }
-                            }
-                            options {
-                                skipDefaultCheckout(true)
-                            }
-                            stages{
-                                stage("Building DevPi Testing venv for .zip package"){
-                                    steps{
-                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
-                                        }
-                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                                    }
-                                }
-                                stage("DevPi Testing .zip package"){
-                                    steps {
-                                        devpiTest(
-                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
-                                            url: "https://devpi.library.illinois.edu",
-                                            index: "${env.BRANCH_NAME}_staging",
-                                            pkgName: "${PKG_NAME}",
-                                            pkgVersion: "${PKG_VERSION}",
-                                            pkgRegex: "zip"
-                                        )
-                                    }
-                                }
-                            }
-                        }
                         stage("Built Distribution: .whl") {
                             agent {
                                 node {
@@ -646,6 +610,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     [pattern: 'dist*', type: 'INCLUDE'],
                     [pattern: 'logs*', type: 'INCLUDE'],
                     [pattern: 'reports*', type: 'INCLUDE'],
+                    [pattern: '.tox', type: 'INCLUDE'],
                     [pattern: '*@tmp', type: 'INCLUDE']
                     ]
         }
