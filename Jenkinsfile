@@ -36,7 +36,7 @@ pipeline {
         booleanParam(name: "TEST_RUN_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a package")
-        booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+        booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
         string(name: 'URL_SUBFOLDER', defaultValue: "pygetmarc", description: 'The directory that the docs should be saved under')
@@ -47,8 +47,12 @@ pipeline {
             stages{
 
                 stage("Purge all existing data in workspace"){
+
                     when{
-                        equals expected: true, actual: params.FRESH_WORKSPACE
+                        anyOf{
+                                equals expected: true, actual: params.FRESH_WORKSPACE
+                                triggeredBy "TimerTriggerCause"
+                            }
                     }
                     steps{
                         deleteDir()
@@ -374,158 +378,139 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
             }
         }
 
-        stage("Deploying to Devpi") {
-            when {
+        stage("Deploying to DevPi") {
+           when {
                 allOf{
-                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    anyOf{
+                        equals expected: true, actual: params.DEPLOY_DEVPI
+                        triggeredBy "TimerTriggerCause"
+                    }
                     anyOf {
                         equals expected: "master", actual: env.BRANCH_NAME
                         equals expected: "dev", actual: env.BRANCH_NAME
                     }
                 }
             }
-            steps {
-                bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
-                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+            stages{
+                stage("Upload to Devpi staging") {
+                    steps {
+                        bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
+                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
 
-                }
-                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                script {
-                        bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
-                        try {
-                            bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
-                        } catch (exc) {
-                            echo "Unable to upload to devpi with docs."
                         }
-                    }
+                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                        script {
+                                bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
+                                try {
+                                    bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
+                                } catch (exc) {
+                                    echo "Unable to upload to devpi with docs."
+                                }
+                            }
 
-            }
-        }
-        stage("Test DevPi packages") {
-            when {
-                allOf{
-                    equals expected: true, actual: params.DEPLOY_DEVPI
-                    anyOf {
-                        equals expected: "master", actual: env.BRANCH_NAME
-                        equals expected: "dev", actual: env.BRANCH_NAME
                     }
                 }
-            }
+                stage("Test DevPi packages") {
+//                    when {
+//                        allOf{
+//                            equals expected: true, actual: params.DEPLOY_DEVPI
+//                            anyOf {
+//                                equals expected: "master", actual: env.BRANCH_NAME
+//                                equals expected: "dev", actual: env.BRANCH_NAME
+//                            }
+//                        }
+//                    }
 
 
-            parallel {
-                stage("Source Distribution: .tar.gz") {
-                    agent {
-                        node {
-                            label "Windows && Python3"
+                    parallel {
+                        stage("Source Distribution: .tar.gz") {
+                            agent {
+                                node {
+                                    label "Windows && Python3"
+                                }
+                            }
+                            options {
+                                skipDefaultCheckout(true)
+                            }
+                            stages{
+                                stage("Building DevPi Testing venv for .tar.gz package"){
+                                    steps{
+                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
+                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+
+                                        }
+                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                    }
+                                }
+                                stage("DevPi Testing tar.gz package"){
+                                    steps {
+                                        devpiTest(
+                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
+                                            url: "https://devpi.library.illinois.edu",
+                                            index: "${env.BRANCH_NAME}_staging",
+                                            pkgName: "${PKG_NAME}",
+                                            pkgVersion: "${PKG_VERSION}",
+                                            pkgRegex: "tar.gz"
+                                        )
+                                    }
+                                }
+                            }
+
+                            post {
+                                cleanup{
+                                        cleanWs deleteDirs: true, patterns: [
+                                            [pattern: 'certs', type: 'INCLUDE']
+                                        ]
+                                    }
+                            }
+
                         }
-                    }
-                    options {
-                        skipDefaultCheckout(true)
-                    }
-                    stages{
-                        stage("Building DevPi Testing venv for .tar.gz package"){
-                            steps{
-                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                                bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                        stage("Built Distribution: .whl") {
+                            agent {
+                                node {
+                                    label "Windows && Python3"
+                                }
+                            }
+                            options {
+                                skipDefaultCheckout(true)
+                            }
+                            stages{
+                                stage("Building DevPi Testing venv for .whl package"){
+                                    steps{
+                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
+                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
+                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+
+                                        }
+                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                    }
+                                }
+                                stage("DevPi Testing .whl package"){
+                                    steps {
+                                        devpiTest(
+                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
+                                            url: "https://devpi.library.illinois.edu",
+                                            index: "${env.BRANCH_NAME}_staging",
+                                            pkgName: "${PKG_NAME}",
+                                            pkgVersion: "${PKG_VERSION}",
+                                            pkgRegex: "whl"
+                                        )
+                                    }
 
                                 }
-                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                             }
-                        }
-                        stage("DevPi Testing tar.gz package"){
-                            steps {
-                                devpiTest(
-                                    devpiExecutable: "venv\\Scripts\\devpi.exe",
-                                    url: "https://devpi.library.illinois.edu",
-                                    index: "${env.BRANCH_NAME}_staging",
-                                    pkgName: "${PKG_NAME}",
-                                    pkgVersion: "${PKG_VERSION}",
-                                    pkgRegex: "tar.gz"
-                                )
-                            }
-                        }
-                    }
-
-                    post {
-                        failure {
-                            echo "Tests for .tar.gz source on DevPi failed."
-                        }
-                    }
-
-                }
-                stage("Source Distribution: .zip") {
-                    agent {
-                        node {
-                            label "Windows && Python3"
-                        }
-                    }
-                    options {
-                        skipDefaultCheckout(true)
-                    }
-                    stages{
-                        stage("Building DevPi Testing venv for .zip package"){
-                            steps{
-                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                                bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
+                            post{
+                                cleanup{
+                                    cleanWs deleteDirs: true, patterns: [
+                                        [pattern: 'certs', type: 'INCLUDE']
+                                    ]
                                 }
-                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            }
-                        }
-                        stage("DevPi Testing .zip package"){
-                            steps {
-                                devpiTest(
-                                    devpiExecutable: "venv\\Scripts\\devpi.exe",
-                                    url: "https://devpi.library.illinois.edu",
-                                    index: "${env.BRANCH_NAME}_staging",
-                                    pkgName: "${PKG_NAME}",
-                                    pkgVersion: "${PKG_VERSION}",
-                                    pkgRegex: "zip"
-                                )
-                            }
-                        }
-                    }
-                }
-                stage("Built Distribution: .whl") {
-                    agent {
-                        node {
-                            label "Windows && Python3"
-                        }
-                    }
-                    options {
-                        skipDefaultCheckout(true)
-                    }
-                    stages{
-                        stage("Building DevPi Testing venv for .whl package"){
-                            steps{
-                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                                bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                                withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                    bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
-                                }
-                                bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            }
-                        }
-                        stage("DevPi Testing .whl package"){
-                            steps {
-                                devpiTest(
-                                    devpiExecutable: "venv\\Scripts\\devpi.exe",
-                                    url: "https://devpi.library.illinois.edu",
-                                    index: "${env.BRANCH_NAME}_staging",
-                                    pkgName: "${PKG_NAME}",
-                                    pkgVersion: "${PKG_VERSION}",
-                                    pkgRegex: "whl"
-                                )
                             }
                         }
                     }
@@ -629,7 +614,15 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
-            bat "dir"
-        } 
+            cleanWs deleteDirs: true, patterns: [
+                    [pattern: 'build*', type: 'INCLUDE'],
+                    [pattern: 'certs', type: 'INCLUDE'],
+                    [pattern: 'dist*', type: 'INCLUDE'],
+                    [pattern: 'logs*', type: 'INCLUDE'],
+                    [pattern: 'reports*', type: 'INCLUDE'],
+                    [pattern: '.tox', type: 'INCLUDE'],
+                    [pattern: '*@tmp', type: 'INCLUDE']
+                    ]
+        }
     }
 }
