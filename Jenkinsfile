@@ -640,7 +640,14 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     echo "Devpi remove exited with code ${devpi_remove_return_code}."
                 }
             }
-            bat "dir"
-        } 
+            cleanWs deleteDirs: true, patterns: [
+                    [pattern: 'build*', type: 'INCLUDE'],
+                    [pattern: 'certs', type: 'INCLUDE'],
+                    [pattern: 'dist*', type: 'INCLUDE'],
+                    [pattern: 'logs*', type: 'INCLUDE'],
+                    [pattern: 'reports*', type: 'INCLUDE'],
+                    [pattern: '*@tmp', type: 'INCLUDE']
+                    ]
+        }
     }
 }
