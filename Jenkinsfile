@@ -461,9 +461,11 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                             }
 
                             post {
-                                failure {
-                                    echo "Tests for .tar.gz source on DevPi failed."
-                                }
+                                cleanup{
+                                        cleanWs deleteDirs: true, patterns: [
+                                            [pattern: 'certs', type: 'INCLUDE']
+                                        ]
+                                    }
                             }
 
                         }
@@ -500,6 +502,14 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                                             pkgRegex: "whl"
                                         )
                                     }
+
+                                }
+                            }
+                            post{
+                                cleanup{
+                                    cleanWs deleteDirs: true, patterns: [
+                                        [pattern: 'certs', type: 'INCLUDE']
+                                    ]
                                 }
                             }
                         }
