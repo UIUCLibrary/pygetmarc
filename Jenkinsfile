@@ -153,8 +153,8 @@ pipeline {
                     steps {
                         script {
                             dir("source"){
-                                PKG_NAME = bat(returnStdout: true, script: "python  setup.py --name").trim()
-                                PKG_VERSION = bat(returnStdout: true, script: "python setup.py --version").trim()
+                                PKG_NAME = bat(returnStdout: true, script: "@python  setup.py --name").trim()
+                                PKG_VERSION = bat(returnStdout: true, script: "@python setup.py --version").trim()
                                 DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
                             }
                         }
