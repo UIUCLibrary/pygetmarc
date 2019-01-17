@@ -44,6 +44,9 @@ pipeline {
     stages 
     {
         stage("Configure") {
+            environment {
+                PATH = "${tool 'CPython-3.6'};$PATH"
+            }
             stages{
 
                 stage("Purge all existing data in workspace"){
@@ -99,15 +102,16 @@ pipeline {
                     }
                 }
                 stage("Installing required system level dependencies"){
+
                     steps{
                         lock("system_python_${NODE_NAME}"){
-                            bat "${tool 'CPython-3.6'}\\python -m pip install --upgrade pip --quiet"
+                            bat "python -m pip install --upgrade pip"
                         }
                     }
                     post{
                         always{
                             lock("system_python_${NODE_NAME}"){
-                                bat "${tool 'CPython-3.6'}\\python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
+                                bat "python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
                             }
                             archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
                         }
@@ -115,7 +119,7 @@ pipeline {
                 }
                 stage("Creating virtualenv for building"){
                     steps{
-                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
+                        bat "python -m venv venv"
                         script {
                             try {
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip"
@@ -149,8 +153,8 @@ pipeline {
                     steps {
                         script {
                             dir("source"){
-                                PKG_NAME = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python  setup.py --name").trim()
-                                PKG_VERSION = bat(returnStdout: true, script: "@${tool 'CPython-3.6'}\\python setup.py --version").trim()
+                                PKG_NAME = bat(returnStdout: true, script: "@python  setup.py --name").trim()
+                                PKG_VERSION = bat(returnStdout: true, script: "@python setup.py --version").trim()
                                 DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
                             }
                         }
