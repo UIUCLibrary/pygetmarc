@@ -105,7 +105,7 @@ pipeline {
 
                     steps{
                         lock("system_python_${NODE_NAME}"){
-                            bat "python -m pip install --upgrade pip --quiet"
+                            bat "python -m pip install --upgrade pip"
                         }
                     }
                     post{
