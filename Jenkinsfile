@@ -119,7 +119,7 @@ pipeline {
                 }
                 stage("Creating virtualenv for building"){
                     steps{
-                        bat "$python -m venv venv"
+                        bat "python -m venv venv"
                         script {
                             try {
                                 bat "call venv\\Scripts\\python.exe -m pip install -U pip"
