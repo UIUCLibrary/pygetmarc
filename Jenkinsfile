@@ -21,7 +21,7 @@ pipeline {
     environment {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
-        PATH = "${tool 'CPython-3.6'};$PATH"
+        PATH = "${tool 'CPython-3.6'}\\Scripts;$PATH"
     }
     triggers {
         cron('@daily')
