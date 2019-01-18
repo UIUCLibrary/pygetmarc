@@ -7,7 +7,7 @@
 //def PKG_VERSION = "unknown"
 //def DOC_ZIP_FILENAME = "doc.zip"
 
-def reports_dir = ""
+//def reports_dir = ""
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
     script {
