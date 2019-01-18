@@ -156,15 +156,15 @@ pipeline {
                         }
                     }
                 }
-                stage("Logging into DevPi"){
-                    environment{
-                        DEVPI_PSWD = credentials('devpi-login')
-                    }
-                    steps{
-                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}\\certs\\"
-                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${env.DEVPI_PSWD} --clientdir ${WORKSPACE}\\certs\\"
-                    }
-                }
+//                stage("Logging into DevPi"){
+//                    environment{
+//                        DEVPI_PSWD = credentials('devpi-login')
+//                    }
+//                    steps{
+//                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}\\certs\\"
+//                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${env.DEVPI_PSWD} --clientdir ${WORKSPACE}\\certs\\"
+//                    }
+//                }
 //                stage("Setting variables used by the rest of the build"){
 //
 //
