@@ -3,9 +3,9 @@
 //import org.ds.*
 @Library(["devpi", "PythonHelpers"]) _
 
-def PKG_NAME = "unknown"
-def PKG_VERSION = "unknown"
-def DOC_ZIP_FILENAME = "doc.zip"
+//def PKG_NAME = "unknown"
+//def PKG_VERSION = "unknown"
+//def DOC_ZIP_FILENAME = "doc.zip"
 
 def reports_dir = ""
 
@@ -165,30 +165,37 @@ pipeline {
                         bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${env.DEVPI_PSWD} --clientdir ${WORKSPACE}\\certs\\"
                     }
                 }
-                stage("Setting variables used by the rest of the build"){
-
-
-                    steps {
-                        script {
-                            dir("source"){
-                                PKG_NAME = bat(returnStdout: true, script: "@python  setup.py --name").trim()
-                                PKG_VERSION = bat(returnStdout: true, script: "@python setup.py --version").trim()
-                                DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
-                            }
-                        }
-                    }
-                    post{
-                        always{
-                            echo """Name               = ${env.PKG_NAME}
-Version            = ${env.PKG_VERSION}
-documentation zip file          = ${DOC_ZIP_FILENAME}
-        """
-                        }
-                        failure {
-                            deleteDir()
-                        }
-                    }
+//                stage("Setting variables used by the rest of the build"){
+//
+//
+//                    steps {
+//                        script {
+//                            dir("source"){
+//                                PKG_NAME = bat(returnStdout: true, script: "@python  setup.py --name").trim()
+//                                PKG_VERSION = bat(returnStdout: true, script: "@python setup.py --version").trim()
+//                                DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+//                            }
+//                        }
+//                    }
+//                    post{
+//                        always{
+//                            echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
+//                            echo """Name               = ${env.PKG_NAME}
+//Version            = ${env.PKG_VERSION}
+//documentation zip file          = ${DOC_ZIP_FILENAME}
+//        """
+//                        }
+//                        failure {
+//                            deleteDir()
+//                        }
+//                    }
+//                }
+            }
+            post{
+                always{
+                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
                 }
+
             }
 
         }
@@ -234,7 +241,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
                             stash includes: 'build/docs/html/**', name: 'docs'
                         }
                         failure{
@@ -425,7 +432,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                         script {
                                 bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
                                 try {
-                                    bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
+                                    bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist\\${env.DOC_ZIP_FILENAME}"
                                 } catch (exc) {
                                     echo "Unable to upload to devpi with docs."
                                 }
