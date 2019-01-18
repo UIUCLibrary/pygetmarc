@@ -1,13 +1,20 @@
 #!groovy
-//@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
-//import org.ds.*
-@Library("devpi") _
+@Library(["devpi", "PythonHelpers"]) _
 
-def PKG_NAME = "unknown"
-def PKG_VERSION = "unknown"
-def DOC_ZIP_FILENAME = "doc.zip"
 
-def reports_dir = ""
+
+def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
+    script {
+                try {
+                    bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
+                    bat "${devpiExecutable} use ${devpiIndex}"
+                    bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
+                } catch (Exception ex) {
+                    echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
+            }
+
+    }
+}
 
 pipeline {
     agent {
@@ -19,6 +26,11 @@ pipeline {
         checkoutToSubdirectory("source")
     }
     environment {
+        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+        PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
+        PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
+        DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+        DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
         PATH = "${tool 'CPython-3.6'}\\Scripts;$PATH"
@@ -136,39 +148,12 @@ pipeline {
                         }
                     }
                 }
-                stage("Logging into DevPi"){
-                    environment{
-                        DEVPI_PSWD = credentials('devpi-login')
-                    }
-                    steps{
-                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}\\certs\\"
-                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${env.DEVPI_PSWD} --clientdir ${WORKSPACE}\\certs\\"
-                    }
+            }
+            post{
+                always{
+                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
                 }
-                stage("Setting variables used by the rest of the build"){
 
-
-                    steps {
-                        script {
-                            dir("source"){
-                                PKG_NAME = bat(returnStdout: true, script: "@python  setup.py --name").trim()
-                                PKG_VERSION = bat(returnStdout: true, script: "@python setup.py --version").trim()
-                                DOC_ZIP_FILENAME = "${PKG_NAME}-${PKG_VERSION}.doc.zip"
-                            }
-                        }
-                    }
-                    post{
-                        always{
-                            echo """Name               = ${PKG_NAME}
-Version            = ${PKG_VERSION}
-documentation zip file          = ${DOC_ZIP_FILENAME}
-        """
-                        }
-                        failure {
-                            deleteDir()
-                        }
-                    }
-                }
             }
 
         }
@@ -200,9 +185,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                 stage("Sphinx documentation"){
                     steps {
                         echo "Building docs on ${env.NODE_NAME}"
-                        // tee('logs/build_sphinx.log') {
                         dir("source"){
-                            // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
                             powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | tee ${WORKSPACE}\\logs\\build_sphinx.log"
                         }   
                     // }
@@ -214,7 +197,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
                             stash includes: 'build/docs/html/**', name: 'docs'
                         }
                         failure{
@@ -225,18 +208,24 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
             }
         }
         stage("Testing") {
+            environment {
+                PATH = "${WORKSPACE}\\venv\\Scripts;$PATH"
+            }
             parallel {
                 stage("Run Tox test") {
                     when {
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
+                    environment {
+                        PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                    }
                     steps {
                         dir("source"){
                             script{
                                 try{
-                                    bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox"
+                                    bat "tox --workdir ${WORKSPACE}\\.tox"
                                 } catch (exc){
-                                    bat "${WORKSPACE}\\venv\\Scripts\\tox.exe --workdir ${WORKSPACE}\\.tox --recreate"
+                                    bat "tox --workdir ${WORKSPACE}\\.tox --recreate"
                                 }
 
                             }
@@ -255,7 +244,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     }
                     steps {
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+                            bat "sphinx-build -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
                         }
                     }
                     post{
@@ -279,7 +268,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                             try{
                                 dir("source"){
                                     bat "dir"
-                                    bat "${WORKSPACE}\\venv\\Scripts\\mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                    bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
                             } catch (exc) {
                                 echo "MyPy found some warnings"
@@ -299,9 +288,9 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     }
                     steps {
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
+
                             lock("${WORKSPACE}/reports/coverage.xml"){
-                                bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                                bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
                             }
                         }
                     }
@@ -318,7 +307,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     }
                     steps {
                         dir("source"){
-                            bat "${WORKSPACE}\\venv\\Scripts\\pip.exe install pytest-cov"
+//                            bat "pip install pytest-cov"
                             lock("${WORKSPACE}/reports/coverage.xml"){
                                 bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
                             }
@@ -369,7 +358,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
         stage("Packaging") {
             steps {
                 dir("source"){
-                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
                 }
             }
             post{
@@ -393,40 +382,22 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                     }
                 }
             }
+            options{
+                timestamps()
+            }
+            environment{
+                PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;${PATH}"
+            }
             stages{
                 stage("Upload to Devpi staging") {
                     steps {
-                        bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
-                        }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        script {
-                                bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
-                                try {
-                                    bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist\\${DOC_ZIP_FILENAME}"
-                                } catch (exc) {
-                                    echo "Unable to upload to devpi with docs."
-                                }
-                            }
-
+                        bat "devpi.exe use https://devpi.library.illinois.edu"
+                        bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
                     }
                 }
                 stage("Test DevPi packages") {
-//                    when {
-//                        allOf{
-//                            equals expected: true, actual: params.DEPLOY_DEVPI
-//                            anyOf {
-//                                equals expected: "master", actual: env.BRANCH_NAME
-//                                equals expected: "dev", actual: env.BRANCH_NAME
-//                            }
-//                        }
-//                    }
-
-
                     parallel {
-                        stage("Source Distribution: .tar.gz") {
+                        stage("Source Distribution: .zip") {
                             agent {
                                 node {
                                     label "Windows && Python3"
@@ -435,30 +406,37 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                             options {
                                 skipDefaultCheckout(true)
                             }
+                            environment {
+                                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                            }
                             stages{
-                                stage("Building DevPi Testing venv for .tar.gz package"){
+                                stage("Building DevPi Testing venv for .zip package"){
                                     steps{
-                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
+                                        lock("system_python_${NODE_NAME}"){
+                                            bat "python -m venv venv"
                                         }
-                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                        bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install setuptools --upgrade && venv\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
                                     }
                                 }
-                                stage("DevPi Testing tar.gz package"){
+                                stage("Testing DevPi zip Package"){
+                                    options{
+                                        timeout(20)
+                                    }
                                     steps {
+                                        echo "Testing Source tar.gz package in devpi"
+
                                         devpiTest(
-                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
+                                            devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
                                             url: "https://devpi.library.illinois.edu",
                                             index: "${env.BRANCH_NAME}_staging",
-                                            pkgName: "${PKG_NAME}",
-                                            pkgVersion: "${PKG_VERSION}",
-                                            pkgRegex: "tar.gz"
+                                            pkgName: "${env.PKG_NAME}",
+                                            pkgVersion: "${env.PKG_VERSION}",
+                                            pkgRegex: "zip",
+                                            detox: false
                                         )
+                                        echo "Finished testing Source Distribution: .zip"
                                     }
+
                                 }
                             }
 
@@ -477,43 +455,69 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                                     label "Windows && Python3"
                                 }
                             }
+                            environment {
+                                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;${tool 'CPython-3.7'};$PATH"
+                            }
                             options {
                                 skipDefaultCheckout(true)
                             }
                             stages{
-                                stage("Building DevPi Testing venv for .whl package"){
-                                    steps{
-                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
-                                        }
-                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                                    }
-                                }
-                                stage("DevPi Testing .whl package"){
+                                stage("Creating venv to Test Whl"){
                                     steps {
+                                        lock("system_python_${NODE_NAME}"){
+                                            bat "if not exist venv\\36 mkdir venv\\36"
+                                            bat "\"${tool 'CPython-3.6'}\\python.exe\" -m venv venv\\36"
+                                            bat "if not exist venv\\37 mkdir venv\\37"
+                                            bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv\\37"
+                                        }
+                                        bat "venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
+                                    }
+
+                                }
+                                stage("Testing DevPi .whl Package"){
+                                    options{
+                                        timeout(20)
+                                    }
+                                    environment{
+                                       PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;${tool 'CPython-3.7'};$PATH"
+                                    }
+                                    steps {
+                                        echo "Testing Whl package in devpi"
                                         devpiTest(
-                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
+//                                                devpiExecutable: "venv\\36\\Scripts\\devpi.exe",
+                                            devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
                                             url: "https://devpi.library.illinois.edu",
                                             index: "${env.BRANCH_NAME}_staging",
-                                            pkgName: "${PKG_NAME}",
-                                            pkgVersion: "${PKG_VERSION}",
-                                            pkgRegex: "whl"
-                                        )
-                                    }
+                                            pkgName: "${env.PKG_NAME}",
+                                            pkgVersion: "${env.PKG_VERSION}",
+                                            pkgRegex: "whl",
+                                            detox: false
+                                            )
 
+                                        echo "Finished testing Built Distribution: .whl"
+                                    }
                                 }
+
                             }
-                            post{
-                                cleanup{
-                                    cleanWs deleteDirs: true, patterns: [
-                                        [pattern: 'certs', type: 'INCLUDE']
-                                    ]
-                                }
+                        }
+                    }
+                }
+                stage("Deploy to DevPi Production") {
+                    when {
+                        allOf{
+                            equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                            branch "master"
+                        }
+                    }
+                    steps {
+                        script {
+                            input "Release ${env.PKG_NAME} ${env.PKG_VERSION} to DevPi Production?"
+                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             }
+
+                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                            bat "venv\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
                         }
                     }
                 }
@@ -525,13 +529,17 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                             bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "venv\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
+
                 }
                 failure {
                     echo "At least one package format on DevPi failed."
+                }
+                cleanup{
+                    remove_from_devpi("venv\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
                 }
             }
         }
@@ -569,26 +577,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                         }
                     }
                 }
-                stage("Deploy to DevPi Production") {
-                    when {
-                        allOf{
-                            equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
-                            equals expected: true, actual: params.DEPLOY_DEVPI
-                            branch "master"
-                        }
-                    }
-                    steps {
-                        script {
-                            input "Release ${PKG_NAME} ${PKG_VERSION} to DevPi Production?"
-                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"         
-                            }
 
-                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${PKG_NAME}==${PKG_VERSION} production/release"
-                        }
-                    }
-                }
             }
         }
     }
@@ -606,15 +595,7 @@ documentation zip file          = ${DOC_ZIP_FILENAME}
                         }   
                     }
                 }                
-                if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                    }
 
-                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${PKG_NAME}==${PKG_VERSION}"
-                    echo "Devpi remove exited with code ${devpi_remove_return_code}."
-                }
             }
             cleanWs deleteDirs: true, patterns: [
                     [pattern: 'build*', type: 'INCLUDE'],
