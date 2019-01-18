@@ -156,40 +156,6 @@ pipeline {
                         }
                     }
                 }
-//                stage("Logging into DevPi"){
-//                    environment{
-//                        DEVPI_PSWD = credentials('devpi-login')
-//                    }
-//                    steps{
-//                        bat "venv\\Scripts\\devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}\\certs\\"
-//                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${env.DEVPI_PSWD} --clientdir ${WORKSPACE}\\certs\\"
-//                    }
-//                }
-//                stage("Setting variables used by the rest of the build"){
-//
-//
-//                    steps {
-//                        script {
-//                            dir("source"){
-//                                PKG_NAME = bat(returnStdout: true, script: "@python  setup.py --name").trim()
-//                                PKG_VERSION = bat(returnStdout: true, script: "@python setup.py --version").trim()
-//                                DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
-//                            }
-//                        }
-//                    }
-//                    post{
-//                        always{
-//                            echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
-//                            echo """Name               = ${env.PKG_NAME}
-//Version            = ${env.PKG_VERSION}
-//documentation zip file          = ${DOC_ZIP_FILENAME}
-//        """
-//                        }
-//                        failure {
-//                            deleteDir()
-//                        }
-//                    }
-//                }
             }
             post{
                 always{
@@ -229,7 +195,6 @@ pipeline {
                         echo "Building docs on ${env.NODE_NAME}"
                         // tee('logs/build_sphinx.log') {
                         dir("source"){
-                            // bat script: "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs"
                             powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | tee ${WORKSPACE}\\logs\\build_sphinx.log"
                         }   
                     // }
@@ -441,17 +406,6 @@ pipeline {
                     }
                 }
                 stage("Test DevPi packages") {
-//                    when {
-//                        allOf{
-//                            equals expected: true, actual: params.DEPLOY_DEVPI
-//                            anyOf {
-//                                equals expected: "master", actual: env.BRANCH_NAME
-//                                equals expected: "dev", actual: env.BRANCH_NAME
-//                            }
-//                        }
-//                    }
-
-
                     parallel {
                         stage("Source Distribution: .zip") {
                             agent {
@@ -637,15 +591,7 @@ pipeline {
                         }   
                     }
                 }                
-//                if (env.BRANCH_NAME == "master" || env.BRANCH_NAME == "dev"){
-//                    withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-//                        bat "venv\\Scripts\\devpi.exe login DS_Jenkins --password ${DEVPI_PASSWORD}"
-//                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-//                    }
-//
-//                    def devpi_remove_return_code = bat returnStatus: true, script:"venv\\Scripts\\devpi.exe remove -y ${env.PKG_NAME}==${env.PKG_VERSION}"
-//                    echo "Devpi remove exited with code ${devpi_remove_return_code}."
-//                }
+
             }
             cleanWs deleteDirs: true, patterns: [
                     [pattern: 'build*', type: 'INCLUDE'],
