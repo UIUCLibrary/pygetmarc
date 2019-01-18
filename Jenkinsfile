@@ -5,13 +5,13 @@
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
     script {
-                try {
-                    bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
-                    bat "${devpiExecutable} use ${devpiIndex}"
-                    bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
-                } catch (Exception ex) {
-                    echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
-            }
+            try {
+                bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
+                bat "${devpiExecutable} use ${devpiIndex}"
+                bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
+            } catch (Exception ex) {
+                echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
+        }
 
     }
 }
@@ -149,7 +149,7 @@ pipeline {
                 }
             }
             post{
-                always{
+                success{
                     echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
                 }
 
