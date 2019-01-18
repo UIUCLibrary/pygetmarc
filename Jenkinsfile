@@ -225,6 +225,9 @@ pipeline {
                     when {
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
+                    environment {
+                        PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                    }
                     steps {
                         dir("source"){
                             script{
