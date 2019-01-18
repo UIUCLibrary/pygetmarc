@@ -396,7 +396,7 @@ pipeline {
         stage("Packaging") {
             steps {
                 dir("source"){
-                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist bdist_wheel -d ${WORKSPACE}\\dist"
+                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
                 }
             }
             post{
@@ -453,7 +453,7 @@ pipeline {
 
 
                     parallel {
-                        stage("Source Distribution: .tar.gz") {
+                        stage("Source Distribution: .zip") {
                             agent {
                                 node {
                                     label "Windows && Python3"
@@ -483,7 +483,7 @@ pipeline {
                                             index: "${env.BRANCH_NAME}_staging",
                                             pkgName: "${env.PKG_NAME}",
                                             pkgVersion: "${env.PKG_VERSION}",
-                                            pkgRegex: "tar.gz"
+                                            pkgRegex: "zip"
                                         )
                                     }
                                 }
