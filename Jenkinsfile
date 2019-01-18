@@ -556,12 +556,13 @@ pipeline {
                         }
 
                     }
-                    cleanup{
-                        remove_from_devpi("venv\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
-                    }
+
                 }
                 failure {
                     echo "At least one package format on DevPi failed."
+                }
+                cleanup{
+                    remove_from_devpi("venv\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
                 }
             }
         }
