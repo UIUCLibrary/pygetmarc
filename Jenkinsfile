@@ -391,24 +391,17 @@ pipeline {
                     }
                 }
             }
+            options{
+                timestamps()
+            }
+            environment{
+                PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;${PATH}"
+            }
             stages{
                 stage("Upload to Devpi staging") {
                     steps {
-                        bat "venv\\Scripts\\devpi.exe use https://devpi.library.illinois.edu"
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
-                        }
-                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                        script {
-                                bat "venv\\Scripts\\devpi.exe upload --from-dir dist"
-                                try {
-                                    bat "venv\\Scripts\\devpi.exe upload --only-docs --from-dir ${WORKSPACE}\\dist\\${env.DOC_ZIP_FILENAME}"
-                                } catch (exc) {
-                                    echo "Unable to upload to devpi with docs."
-                                }
-                            }
-
+                        bat "devpi.exe use https://devpi.library.illinois.edu"
+                        bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
                     }
                 }
                 stage("Test DevPi packages") {
@@ -422,31 +415,50 @@ pipeline {
                             options {
                                 skipDefaultCheckout(true)
                             }
+                            environment {
+                                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                            }
                             stages{
-                                stage("Building DevPi Testing venv for .tar.gz package"){
+                                stage("Building DevPi Testing venv for .zip package"){
                                     steps{
-                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
+                                        lock("system_python_${NODE_NAME}"){
+                                            bat "python -m venv venv"
                                         }
-                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                                        bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install setuptools --upgrade && venv\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
                                     }
                                 }
-                                stage("DevPi Testing tar.gz package"){
+                                stage("Testing DevPi zip Package"){
+                                    options{
+                                        timeout(20)
+                                    }
                                     steps {
+                                        echo "Testing Source tar.gz package in devpi"
+
                                         devpiTest(
-                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
+                                            devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
                                             url: "https://devpi.library.illinois.edu",
                                             index: "${env.BRANCH_NAME}_staging",
                                             pkgName: "${env.PKG_NAME}",
                                             pkgVersion: "${env.PKG_VERSION}",
-                                            pkgRegex: "zip"
+                                            pkgRegex: "zip",
+                                            detox: false
                                         )
+                                        echo "Finished testing Source Distribution: .zip"
                                     }
+
                                 }
+//                                stage("DevPi Testing zip package"){
+//                                    steps {
+//                                        devpiTest(
+//                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
+//                                            url: "https://devpi.library.illinois.edu",
+//                                            index: "${env.BRANCH_NAME}_staging",
+//                                            pkgName: "${env.PKG_NAME}",
+//                                            pkgVersion: "${env.PKG_VERSION}",
+//                                            pkgRegex: "zip"
+//                                        )
+//                                    }
+//                                }
                             }
 
                             post {
@@ -464,43 +476,93 @@ pipeline {
                                     label "Windows && Python3"
                                 }
                             }
+                            environment {
+                                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;${tool 'CPython-3.7'};$PATH"
+                            }
                             options {
                                 skipDefaultCheckout(true)
                             }
                             stages{
-                                stage("Building DevPi Testing venv for .whl package"){
-                                    steps{
-                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-
-                                        }
-                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                                    }
-                                }
-                                stage("DevPi Testing .whl package"){
+                                stage("Creating venv to Test Whl"){
                                     steps {
+                                        lock("system_python_${NODE_NAME}"){
+                                            bat "if not exist venv\\36 mkdir venv\\36"
+                                            bat "\"${tool 'CPython-3.6'}\\python.exe\" -m venv venv\\36"
+                                            bat "if not exist venv\\37 mkdir venv\\37"
+                                            bat "\"${tool 'CPython-3.7'}\\python.exe\" -m venv venv\\37"
+                                        }
+                                        bat "venv\\36\\Scripts\\python.exe -m pip install pip --upgrade && venv\\36\\Scripts\\pip.exe install setuptools --upgrade && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" devpi-client"
+                                    }
+
+                                }
+                                stage("Testing DevPi .whl Package"){
+                                    options{
+                                        timeout(20)
+                                    }
+                                    environment{
+                                       PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;${tool 'CPython-3.7'};$PATH"
+                                    }
+                                    steps {
+                                        echo "Testing Whl package in devpi"
                                         devpiTest(
-                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
+//                                                devpiExecutable: "venv\\36\\Scripts\\devpi.exe",
+                                            devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
                                             url: "https://devpi.library.illinois.edu",
                                             index: "${env.BRANCH_NAME}_staging",
                                             pkgName: "${env.PKG_NAME}",
                                             pkgVersion: "${env.PKG_VERSION}",
-                                            pkgRegex: "whl"
-                                        )
-                                    }
+                                            pkgRegex: "whl",
+                                            detox: false
+                                            )
 
+                                        echo "Finished testing Built Distribution: .whl"
+                                    }
                                 }
+
                             }
-                            post{
-                                cleanup{
-                                    cleanWs deleteDirs: true, patterns: [
-                                        [pattern: 'certs', type: 'INCLUDE']
-                                    ]
-                                }
-                            }
+//                        stage("Built Distribution: .whl") {
+//                            agent {
+//                                node {
+//                                    label "Windows && Python3"
+//                                }
+//                            }
+//                            options {
+//                                skipDefaultCheckout(true)
+//                            }
+//                            stages{
+//                                stage("Building DevPi Testing venv for .whl package"){
+//                                    steps{
+//                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
+//                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
+//                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
+//                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
+//                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+//
+//                                        }
+//                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+//                                    }
+//                                }
+//                                stage("DevPi Testing .whl package"){
+//                                    steps {
+//                                        devpiTest(
+//                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
+//                                            url: "https://devpi.library.illinois.edu",
+//                                            index: "${env.BRANCH_NAME}_staging",
+//                                            pkgName: "${env.PKG_NAME}",
+//                                            pkgVersion: "${env.PKG_VERSION}",
+//                                            pkgRegex: "whl"
+//                                        )
+//                                    }
+//
+//                                }
+//                            }
+//                            post{
+//                                cleanup{
+//                                    cleanWs deleteDirs: true, patterns: [
+//                                        [pattern: 'certs', type: 'INCLUDE']
+//                                    ]
+//                                }
+//                            }
                         }
                     }
                 }
