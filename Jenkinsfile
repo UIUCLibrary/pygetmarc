@@ -1,13 +1,7 @@
 #!groovy
-//@Library("ds-utils@v0.2.0") // Uses library from https://github.com/UIUCLibrary/Jenkins_utils
-//import org.ds.*
 @Library(["devpi", "PythonHelpers"]) _
 
-//def PKG_NAME = "unknown"
-//def PKG_VERSION = "unknown"
-//def DOC_ZIP_FILENAME = "doc.zip"
 
-//def reports_dir = ""
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
     script {
@@ -193,7 +187,6 @@ pipeline {
                 stage("Sphinx documentation"){
                     steps {
                         echo "Building docs on ${env.NODE_NAME}"
-                        // tee('logs/build_sphinx.log') {
                         dir("source"){
                             powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | tee ${WORKSPACE}\\logs\\build_sphinx.log"
                         }   
@@ -447,18 +440,6 @@ pipeline {
                                     }
 
                                 }
-//                                stage("DevPi Testing zip package"){
-//                                    steps {
-//                                        devpiTest(
-//                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
-//                                            url: "https://devpi.library.illinois.edu",
-//                                            index: "${env.BRANCH_NAME}_staging",
-//                                            pkgName: "${env.PKG_NAME}",
-//                                            pkgVersion: "${env.PKG_VERSION}",
-//                                            pkgRegex: "zip"
-//                                        )
-//                                    }
-//                                }
                             }
 
                             post {
@@ -520,49 +501,6 @@ pipeline {
                                 }
 
                             }
-//                        stage("Built Distribution: .whl") {
-//                            agent {
-//                                node {
-//                                    label "Windows && Python3"
-//                                }
-//                            }
-//                            options {
-//                                skipDefaultCheckout(true)
-//                            }
-//                            stages{
-//                                stage("Building DevPi Testing venv for .whl package"){
-//                                    steps{
-//                                        bat "${tool 'CPython-3.6'}\\python -m venv venv"
-//                                        bat "venv\\Scripts\\python.exe -m pip install --upgrade pip"
-//                                        bat "venv\\Scripts\\pip.exe install tox devpi-client"
-//                                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-//                                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-//
-//                                        }
-//                                        bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-//                                    }
-//                                }
-//                                stage("DevPi Testing .whl package"){
-//                                    steps {
-//                                        devpiTest(
-//                                            devpiExecutable: "venv\\Scripts\\devpi.exe",
-//                                            url: "https://devpi.library.illinois.edu",
-//                                            index: "${env.BRANCH_NAME}_staging",
-//                                            pkgName: "${env.PKG_NAME}",
-//                                            pkgVersion: "${env.PKG_VERSION}",
-//                                            pkgRegex: "whl"
-//                                        )
-//                                    }
-//
-//                                }
-//                            }
-//                            post{
-//                                cleanup{
-//                                    cleanWs deleteDirs: true, patterns: [
-//                                        [pattern: 'certs', type: 'INCLUDE']
-//                                    ]
-//                                }
-//                            }
                         }
                     }
                 }
