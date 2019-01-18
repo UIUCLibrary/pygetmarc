@@ -297,7 +297,7 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "pip.exe install pytest-cov"
+
                             lock("${WORKSPACE}/reports/coverage.xml"){
                                 bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
                             }
@@ -316,7 +316,7 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "install pytest-cov"
+//                            bat "pip install pytest-cov"
                             lock("${WORKSPACE}/reports/coverage.xml"){
                                 bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
                             }
