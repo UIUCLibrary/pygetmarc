@@ -180,7 +180,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Sphinx documentation"){
+                stage("Sphinx Documentation"){
                     steps {
                         echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
