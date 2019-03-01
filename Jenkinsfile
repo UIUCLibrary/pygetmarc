@@ -209,7 +209,7 @@ pipeline {
                 PATH = "${WORKSPACE}\\venv\\Scripts;$PATH"
             }
             parallel {
-                stage("Run Tox test") {
+                stage("Run Tox Test") {
                     when {
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
@@ -275,7 +275,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Run Integration tests") {
+                stage("Run Integration Tests") {
                     when {
                         equals expected: true, actual: params.TEST_RUN_INTEGRATION
                     }
@@ -294,7 +294,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Run Unit tests") {
+                stage("Run Unit Tests") {
                     when {
                         equals expected: true, actual: params.TEST_RUN_UNIT_TESTS
                     }
@@ -385,7 +385,7 @@ pipeline {
                                 PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                             }
                             stages{
-                                stage("Building DevPi Testing venv for .zip package"){
+                                stage("Building DevPi Testing venv for .zip Package"){
                                     steps{
                                         lock("system_python_${NODE_NAME}"){
                                             bat "python -m venv venv"
