@@ -231,7 +231,7 @@ pipeline {
                     }
                     post {
                         always {
-                            recordIssues(tools: [pep8(id: 'tox', name: 'tox', pattern: '.tox/**/*.log')])
+                            recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/**/*.log')])
                             archiveArtifacts artifacts: ".tox/**/*.log", allowEmptyArchive: true
                         }
                     }
