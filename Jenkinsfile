@@ -606,7 +606,7 @@ pipeline {
                     [pattern: 'dist*', type: 'INCLUDE'],
                     [pattern: 'logs*', type: 'INCLUDE'],
                     [pattern: 'reports*', type: 'INCLUDE'],
-                    [pattern: '.tox', type: 'INCLUDE'],
+//                    [pattern: '.tox', type: 'INCLUDE'],
                     [pattern: '*@tmp', type: 'INCLUDE']
                     ]
         }
