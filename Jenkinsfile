@@ -195,6 +195,13 @@ pipeline {
                                     recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/**/*.log')])
                                     archiveArtifacts artifacts: ".tox/**/*.log", allowEmptyArchive: true
                                 }
+                                cleanup{
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'tox/**/*.log', type: 'INCLUDE']
+                                            ]
+                                        )
+                                }
                             }
                         }
                         stage("Run Doctest Tests"){
