@@ -175,109 +175,114 @@ pipeline {
             }
         }
         stage("Testing") {
-            environment {
-                PATH = "${WORKSPACE}\\venv\\36\\Scripts;${PATH}"
-            }
-            parallel {
-                stage("Run Tox Test") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_TOX
-                    }
+            stages{
+
+                stage("Running Tests"){
                     environment {
-                        PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                        PATH = "${WORKSPACE}\\venv\\36\\Scripts;${PATH}"
                     }
-                    steps {
-                        dir("source"){
-                            script{
-                                try{
-                                  bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox"
-                                } catch (exc) {
-                                  bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --recreate"
-                                }
+                    parallel {
+                        stage("Run Tox Test") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_TOX
                             }
-                        }
-                        
-                    }
-                    post {
-                        always {
-                            recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/**/*.log')])
-                            archiveArtifacts artifacts: ".tox/**/*.log", allowEmptyArchive: true
-                        }
-                    }
-                }
-                stage("Run Doctest Tests"){
-                    when {
-                       equals expected: true, actual: params.TEST_RUN_DOCTEST
-                    }
-                    steps {
-                        dir("source"){
-                            bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
-                        }
-                    }
-                    post{
-                        always {
-                            archiveArtifacts artifacts: "logs/doctest.log"
-
-                        }
-                    }
-                }
-                stage("Run MyPy Static Analysis") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_MYPY
-                    }
-                    steps{
-                        bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html) && (if not exist logs mkdir logs)"
-                        script{
-                            try{
+                            environment {
+                                PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                            }
+                            steps {
                                 dir("source"){
-                                    bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                    script{
+                                        try{
+                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox"
+                                        } catch (exc) {
+                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --recreate"
+                                        }
+                                    }
                                 }
-                            } catch (exc) {
-                                echo "MyPy found some warnings"
-                            }
-                        }
-                    }
-                    post {
-                        always {
-                            recordIssues(tools: [myPy(pattern: 'logs/mypy.log')])
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                        }
-                    }
-                }
-                stage("Run Integration Tests") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_INTEGRATION
-                    }
-                    steps {
-                        dir("source"){
 
-                            lock("${WORKSPACE}/reports/coverage.xml"){
-                                bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                            }
+                            post {
+                                always {
+                                    recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/**/*.log')])
+                                    archiveArtifacts artifacts: ".tox/**/*.log", allowEmptyArchive: true
+                                }
                             }
                         }
-                    }
-                    post {
-                        always{
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
-                            junit "reports/junit-${env.NODE_NAME}-pytest.xml"
-                        }
-                    }
-                }
-                stage("Run Unit Tests") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_UNIT_TESTS
-                    }
-                    steps {
-                        dir("source"){
-                            lock("${WORKSPACE}/reports/coverage.xml"){
-                                bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                        stage("Run Doctest Tests"){
+                            when {
+                               equals expected: true, actual: params.TEST_RUN_DOCTEST
+                            }
+                            steps {
+                                dir("source"){
+                                    bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                }
+                            }
+                            post{
+                                always {
+                                    archiveArtifacts artifacts: "logs/doctest.log"
+
+                                }
                             }
                         }
-                    }
-                    post {
-                        always{
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-Unit tests', reportTitles: ''])
-                                junit "reports/junit-${env.NODE_NAME}-pytest.xml"
+                        stage("Run MyPy Static Analysis") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_MYPY
+                            }
+                            steps{
+                                bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html) && (if not exist logs mkdir logs)"
+                                script{
+                                    try{
+                                        dir("source"){
+                                            bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                        }
+                                    } catch (exc) {
+                                        echo "MyPy found some warnings"
+                                    }
+                                }
+                            }
+                            post {
+                                always {
+                                    recordIssues(tools: [myPy(pattern: 'logs/mypy.log')])
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                }
+                            }
+                        }
+                        stage("Run Integration Tests") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_INTEGRATION
+                            }
+                            steps {
+                                dir("source"){
+
+                                    lock("${WORKSPACE}/reports/coverage.xml"){
+                                        bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                                    }
+                                }
+                            }
+                            post {
+                                always{
+                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+                                    junit "reports/junit-${env.NODE_NAME}-pytest.xml"
+                                }
+                            }
+                        }
+                        stage("Run Unit Tests") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_UNIT_TESTS
+                            }
+                            steps {
+                                dir("source"){
+                                    lock("${WORKSPACE}/reports/coverage.xml"){
+                                        bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                                    }
+                                }
+                            }
+                            post {
+                                always{
+                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-Unit tests', reportTitles: ''])
+                                        junit "reports/junit-${env.NODE_NAME}-pytest.xml"
+                                }
+                            }
                         }
                     }
                 }
