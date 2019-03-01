@@ -92,8 +92,8 @@ pipeline {
                         bat "venv\\36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed"
                     }
                     post{
-                        success{                            
-                            bat "venv\\36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                        success{
+                            bat "(if not exist logs mkdir logs) && venv\\36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
                             archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"                            
                         }
                     }
