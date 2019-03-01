@@ -318,32 +318,39 @@ pipeline {
                 }
             }
             post{
-                always{
-                    script {
-                        try{
-                            publishCoverage
-                                autoDetectPath: 'coverage*/*.xml'
-                                adapters: [
-                                    cobertura(coberturaReportFile:"reports/coverage.xml")
-                                ]
-                        } catch(exc){
-                            echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                            cobertura(
-                                autoUpdateHealth: false,
-                                autoUpdateStability: false,
-                                coberturaReportFile: "reports/coverage.xml",
-                                conditionalCoverageTargets: '70, 0, 0',
-                                failUnhealthy: false,
-                                failUnstable: false,
-                                lineCoverageTargets: '80, 0, 0',
-                                maxNumberOfBuilds: 0,
-                                methodCoverageTargets: '80, 0, 0',
-                                onlyStable: false,
-                                sourceEncoding: 'ASCII',
-                                zoomCoverageChart: false
-                            )
-                        }
-                    }
+                success{
+                    publishCoverage(
+                        adapters: [
+                            coberturaAdapter('reports/coverage.xml')
+                            ],
+                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                        tag: 'coverage'
+                    )
+//                    script {
+//                        try{
+//                            publishCoverage
+//                                autoDetectPath: 'coverage*/*.xml'
+//                                adapters: [
+//                                    cobertura(coberturaReportFile:"reports/coverage.xml")
+//                                ]
+//                        } catch(exc){
+//                            echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
+//                            cobertura(
+//                                autoUpdateHealth: false,
+//                                autoUpdateStability: false,
+//                                coberturaReportFile: "reports/coverage.xml",
+//                                conditionalCoverageTargets: '70, 0, 0',
+//                                failUnhealthy: false,
+//                                failUnstable: false,
+//                                lineCoverageTargets: '80, 0, 0',
+//                                maxNumberOfBuilds: 0,
+//                                methodCoverageTargets: '80, 0, 0',
+//                                onlyStable: false,
+//                                sourceEncoding: 'ASCII',
+//                                zoomCoverageChart: false
+//                            )
+//                        }
+//                    }
                 }
                 cleanup{
                     bat "del reports\\coverage.xml"
