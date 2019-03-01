@@ -242,12 +242,12 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\reports\\doctest.log"
+                            bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                         }
                     }
                     post{
                         always {
-                            archiveArtifacts artifacts: "reports/doctest.txt"
+                            archiveArtifacts artifacts: "logs/doctest.log"
 
                         }
                     }
