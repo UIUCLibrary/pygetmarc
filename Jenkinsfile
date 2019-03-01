@@ -233,7 +233,7 @@ pipeline {
                         
                     }
                     post {
-                        failure {
+                        always {
                             archiveArtifacts artifacts: ".tox/**/*.log", allowEmptyArchive: true
                         }
                     }
