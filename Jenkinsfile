@@ -105,7 +105,7 @@ pipeline {
                                 bat "venv\\36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv\\36\\Scripts\\pip.exe install pytest pytest-cov lxml -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv\\36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed"
                     }
                     post{
                         success{                            
@@ -176,7 +176,11 @@ pipeline {
         }
         stage("Testing") {
             stages{
-
+                stage("Installing Testing Python Packages"){
+                    steps{
+                        bat "venv\\36\\Scripts\\pip.exe install pytest pytest-cov lxml -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                    }
+                }
                 stage("Running Tests"){
                     environment {
                         PATH = "${WORKSPACE}\\venv\\36\\Scripts;${PATH}"
