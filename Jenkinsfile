@@ -73,43 +73,43 @@ pipeline {
                         }
                     }
                 }
-                stage("Cleanup"){
-                    steps {
-                        dir("logs"){
-                            deleteDir()
-                            echo "Cleaned out logs directory"
-                            bat "dir > nul"
-                        }
-
-                        dir("logs"){
-                            deleteDir()
-                            bat "dir > nul"
-                        }
-
-                        dir("build"){
-                            deleteDir()
-                            echo "Cleaned out build directory"
-                            bat "dir > nul"
-                        }
-
-                        dir("dist"){
-                            deleteDir()
-                            echo "Cleaned out distribution directory"
-                            bat "dir > nul"
-                        }
-
-                        dir("${WORKSPACE}/reports"){
-                            deleteDir()
-                            echo "Cleaned out reports directory"
-                            bat "dir > nul"
-                        }
-                    }
-                    post{
-                        failure {
-                            deleteDir()
-                        }
-                    }
-                }
+//                stage("Cleanup"){
+//                    steps {
+//                        dir("logs"){
+//                            deleteDir()
+//                            echo "Cleaned out logs directory"
+//                            bat "dir > nul"
+//                        }
+//
+//                        dir("logs"){
+//                            deleteDir()
+//                            bat "dir > nul"
+//                        }
+//
+//                        dir("build"){
+//                            deleteDir()
+//                            echo "Cleaned out build directory"
+//                            bat "dir > nul"
+//                        }
+//
+//                        dir("dist"){
+//                            deleteDir()
+//                            echo "Cleaned out distribution directory"
+//                            bat "dir > nul"
+//                        }
+//
+//                        dir("${WORKSPACE}/reports"){
+//                            deleteDir()
+//                            echo "Cleaned out reports directory"
+//                            bat "dir > nul"
+//                        }
+//                    }
+//                    post{
+//                        failure {
+//                            deleteDir()
+//                        }
+//                    }
+//                }
                 stage("Installing required system level dependencies"){
 
                     steps{
