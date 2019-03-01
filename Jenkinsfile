@@ -170,7 +170,6 @@ pipeline {
                     }
                     post{
                         always{
-//                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
                             archiveArtifacts artifacts: "logs/build.log"
                         }
                         failure{
@@ -186,9 +185,7 @@ pipeline {
                         echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
                             bat "${WORKSPACE}\\venv\\Scripts\\sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
-//                            powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | tee ${WORKSPACE}\\logs\\build_sphinx.log"
-                        }   
-                    // }
+                        }
                     }
                     post{
                         always {
@@ -245,12 +242,11 @@ pipeline {
                     }
                     steps {
                         dir("source"){
-                            bat "sphinx-build -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
+                            bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\reports\\doctest.log"
                         }
                     }
                     post{
                         always {
-                            bat "move build\\docs\\output.txt reports\\doctest.txt"
                             archiveArtifacts artifacts: "reports/doctest.txt"
 
                         }
