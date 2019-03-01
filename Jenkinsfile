@@ -62,7 +62,7 @@ pipeline {
             }
             stages{
 
-                stage("Purge all existing data in workspace"){
+                stage("Purge All Existing Data in Workspace"){
 
                     when{
                         anyOf{
