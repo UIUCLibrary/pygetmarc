@@ -152,6 +152,7 @@ pipeline {
                 }
                 stage("Sphinx Documentation"){
                     steps {
+                        bat "pip install sphinx"
                         echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
                             bat "sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
