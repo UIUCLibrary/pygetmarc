@@ -3,8 +3,10 @@ import re
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
 
-
-from importlib_resources import read_text
+try:
+    from importlib.resources import read_text  # type: ignore
+except ModuleNotFoundError:
+    from importlib_resources import read_text
 
 
 class AbsEnrichment(metaclass=abc.ABCMeta):

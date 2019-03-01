@@ -1,3 +1,3 @@
 setuptools>=30.3.0
 aiohttp
-importlib_resources
+importlib_resources;python_version<"3.7"

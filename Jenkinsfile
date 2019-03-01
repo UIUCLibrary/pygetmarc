@@ -5,13 +5,13 @@
 
 def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUsername, devpiPassword){
     script {
-                try {
-                    bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
-                    bat "${devpiExecutable} use ${devpiIndex}"
-                    bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
-                } catch (Exception ex) {
-                    echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
-            }
+            try {
+                bat "${devpiExecutable} login ${devpiUsername} --password ${devpiPassword}"
+                bat "${devpiExecutable} use ${devpiIndex}"
+                bat "${devpiExecutable} remove -y ${pkgName}==${pkgVersion}"
+            } catch (Exception ex) {
+                echo "Failed to remove ${pkgName}==${pkgVersion} from ${devpiIndex}"
+        }
 
     }
 }
@@ -26,7 +26,8 @@ pipeline {
         checkoutToSubdirectory("source")
     }
     environment {
-        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+        PYTHON_LOCATION = "${tool 'CPython-3.6'}"
+//        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
         PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
         PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
         DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
@@ -56,12 +57,12 @@ pipeline {
     stages 
     {
         stage("Configure") {
-            environment {
-                PATH = "${tool 'CPython-3.6'};$PATH"
+            environment{
+                PATH = "${env.PYTHON_LOCATION};${PATH}"
             }
             stages{
 
-                stage("Purge all existing data in workspace"){
+                stage("Purge All Existing Data in Workspace"){
 
                     when{
                         anyOf{
@@ -76,83 +77,30 @@ pipeline {
                         }
                     }
                 }
-                stage("Cleanup"){
-                    steps {
-                        dir("logs"){
-                            deleteDir()
-                            echo "Cleaned out logs directory"
-                            bat "dir > nul"
-                        }
-
-                        dir("logs"){
-                            deleteDir()
-                            bat "dir > nul"
-                        }
-
-                        dir("build"){
-                            deleteDir()
-                            echo "Cleaned out build directory"
-                            bat "dir > nul"
-                        }
-
-                        dir("dist"){
-                            deleteDir()
-                            echo "Cleaned out distribution directory"
-                            bat "dir > nul"
-                        }
-
-                        dir("${WORKSPACE}/reports"){
-                            deleteDir()
-                            echo "Cleaned out reports directory"
-                            bat "dir > nul"
-                        }
-                    }
-                    post{
-                        failure {
-                            deleteDir()
-                        }
-                    }
-                }
-                stage("Installing required system level dependencies"){
-
+                stage("Creating Virtualenv for Building"){
                     steps{
-                        lock("system_python_${NODE_NAME}"){
-                            bat "python -m pip install --upgrade pip"
-                        }
-                    }
-                    post{
-                        always{
-                            lock("system_python_${NODE_NAME}"){
-                                bat "python -m pip list > logs\\pippackages_system_${NODE_NAME}.log"
-                            }
-                            archiveArtifacts artifacts: "logs/pippackages_system_${NODE_NAME}.log"
-                        }
-                    }
-                }
-                stage("Creating virtualenv for building"){
-                    steps{
-                        bat "python -m venv venv"
+                        bat "python -m venv venv\\36"
                         script {
                             try {
-                                bat "call venv\\Scripts\\python.exe -m pip install -U pip"
+                                bat "call venv\\36\\Scripts\\python.exe -m pip install -U pip"
                             }
                             catch (exc) {
-                                bat "${tool 'CPython-3.6'}\\python -m venv venv"
-                                bat "call venv\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
+                                bat "python -m venv venv\\36"
+                                bat "venv\\36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv\\Scripts\\pip.exe install devpi-client pytest pytest-cov lxml -r source\\requirements.txt -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv\\36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed"
                     }
                     post{
-                        success{                            
-                            bat "venv\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
+                        success{
+                            bat "(if not exist logs mkdir logs) && venv\\36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
                             archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"                            
                         }
                     }
                 }
             }
             post{
-                always{
+                success{
                     echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
                 }
 
@@ -161,19 +109,21 @@ pipeline {
         }
 
         stage('Build') {
+            environment{
+                PATH = "${WORKSPACE}\\venv\\36\\Scripts;${PATH}"
+            }
             parallel {
                 stage("Python Package"){
                     steps {
                         
                         
                         dir("source"){
-                            powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
+                            powershell "& python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
                         }
                         
                     }
                     post{
                         always{
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build.log']]
                             archiveArtifacts artifacts: "logs/build.log"
                         }
                         failure{
@@ -184,17 +134,17 @@ pipeline {
                         }
                     }
                 }
-                stage("Sphinx documentation"){
+                stage("Sphinx Documentation"){
                     steps {
+                        bat "pip install sphinx"
                         echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
-                            powershell "& ${WORKSPACE}\\venv\\Scripts\\python.exe setup.py build_sphinx --build-dir ${WORKSPACE}\\build\\docs | tee ${WORKSPACE}\\logs\\build_sphinx.log"
-                        }   
-                    // }
+                            bat "sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
+                        }
                     }
                     post{
                         always {
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'Pep8', pattern: 'logs/build_sphinx.log']]
+                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
                             archiveArtifacts artifacts: 'logs/build_sphinx.log'
                         }
                         success{
@@ -210,146 +160,138 @@ pipeline {
             }
         }
         stage("Testing") {
-            environment {
-                PATH = "${WORKSPACE}\\venv\\Scripts;$PATH"
-            }
-            parallel {
-                stage("Run Tox test") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_TOX
-                    }
-                    environment {
-                        PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                    }
-                    steps {
-                        dir("source"){
-                            script{
-                                try{
-                                    bat "tox --workdir ${WORKSPACE}\\.tox"
-                                } catch (exc){
-                                    bat "tox --workdir ${WORKSPACE}\\.tox --recreate"
-                                }
-
-                            }
-                        }
-                        
-                    }
-                    post {
-                        failure {
-                            archiveArtifacts artifacts: ".tox/py36/log/*.log", allowEmptyArchive: true
-                        }
-                    }
-                }
-                stage("Run Doctest Tests"){
-                    when {
-                       equals expected: true, actual: params.TEST_RUN_DOCTEST
-                    }
-                    steps {
-                        dir("source"){
-                            bat "sphinx-build -b doctest ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees"
-                        }
-                    }
-                    post{
-                        always {
-                            bat "move build\\docs\\output.txt reports\\doctest.txt"
-                            archiveArtifacts artifacts: "reports/doctest.txt"
-
-                        }
-                    }
-                }
-                stage("Run MyPy Static Analysis") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_MYPY
-                    }
+            stages{
+                stage("Installing Testing Python Packages"){
                     steps{
-                        dir("reports/mypy/html"){
-                            deleteDir()
-                            bat "dir"
-                        }
-                        script{
-                            try{
+                        bat "venv\\36\\Scripts\\pip.exe install pytest pytest-cov lxml -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                    }
+                }
+                stage("Running Tests"){
+                    environment {
+                        PATH = "${WORKSPACE}\\venv\\36\\Scripts;${PATH}"
+                    }
+                    parallel {
+                        stage("Run Tox Test") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_TOX
+                            }
+                            environment {
+                                PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                            }
+                            steps {
                                 dir("source"){
-                                    bat "dir"
-                                    bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                    script{
+                                        try{
+                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox"
+                                        } catch (exc) {
+                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --recreate"
+                                        }
+                                    }
                                 }
-                            } catch (exc) {
-                                echo "MyPy found some warnings"
-                            }
-                        }
-                    }
-                    post {
-                        always {
-                            warnings canRunOnFailed: true, parserConfigurations: [[parserName: 'MyPy', pattern: 'logs/mypy.log']], unHealthy: ''
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                        }
-                    }
-                }
-                stage("Run Integration tests") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_INTEGRATION
-                    }
-                    steps {
-                        dir("source"){
 
-                            lock("${WORKSPACE}/reports/coverage.xml"){
-                                bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                            }
+                            post {
+                                always {
+                                    recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/**/*.log')])
+                                    archiveArtifacts artifacts: ".tox/**/*.log", allowEmptyArchive: true
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        patterns: [
+                                                [pattern: 'tox/**/*.log', type: 'INCLUDE']
+                                            ]
+                                        )
+                                }
                             }
                         }
-                    }
-                    post {
-                        always{
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
-                            junit "reports/junit-${env.NODE_NAME}-pytest.xml"
-                        }
-                    }
-                }
-                stage("Run Unit tests") {
-                    when {
-                        equals expected: true, actual: params.TEST_RUN_UNIT_TESTS
-                    }
-                    steps {
-                        dir("source"){
-//                            bat "pip install pytest-cov"
-                            lock("${WORKSPACE}/reports/coverage.xml"){
-                                bat "${WORKSPACE}\\venv\\Scripts\\pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                        stage("Run Doctest Tests"){
+                            when {
+                               equals expected: true, actual: params.TEST_RUN_DOCTEST
+                            }
+                            steps {
+                                dir("source"){
+                                    bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                }
+                            }
+                            post{
+                                always {
+                                    archiveArtifacts artifacts: "logs/doctest.log"
+
+                                }
                             }
                         }
-                    }
-                    post {
-                        always{
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-Unit tests', reportTitles: ''])
-                                junit "reports/junit-${env.NODE_NAME}-pytest.xml"
+                        stage("Run MyPy Static Analysis") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_MYPY
+                            }
+                            steps{
+                                bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html) && (if not exist logs mkdir logs)"
+                                script{
+                                    try{
+                                        dir("source"){
+                                            bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
+                                        }
+                                    } catch (exc) {
+                                        echo "MyPy found some warnings"
+                                    }
+                                }
+                            }
+                            post {
+                                always {
+                                    recordIssues(tools: [myPy(pattern: 'logs/mypy.log')])
+                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                }
+                            }
+                        }
+                        stage("Run Integration Tests") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_INTEGRATION
+                            }
+                            steps {
+                                dir("source"){
+
+                                    lock("${WORKSPACE}/reports/coverage.xml"){
+                                        bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                                    }
+                                }
+                            }
+                            post {
+                                always{
+                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
+                                    junit "reports/junit-${env.NODE_NAME}-pytest.xml"
+                                }
+                            }
+                        }
+                        stage("Run Unit Tests") {
+                            when {
+                                equals expected: true, actual: params.TEST_RUN_UNIT_TESTS
+                            }
+                            steps {
+                                dir("source"){
+                                    lock("${WORKSPACE}/reports/coverage.xml"){
+                                        bat "pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
+                                    }
+                                }
+                            }
+                            post {
+                                always{
+                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-Unit tests', reportTitles: ''])
+                                        junit "reports/junit-${env.NODE_NAME}-pytest.xml"
+                                }
+                            }
                         }
                     }
                 }
             }
             post{
-                always{
-                    script {
-                        try{
-                            publishCoverage
-                                autoDetectPath: 'coverage*/*.xml'
-                                adapters: [
-                                    cobertura(coberturaReportFile:"reports/coverage.xml")
-                                ]
-                        } catch(exc){
-                            echo "cobertura With Coverage API failed. Falling back to cobertura plugin"
-                            cobertura(
-                                autoUpdateHealth: false,
-                                autoUpdateStability: false,
-                                coberturaReportFile: "reports/coverage.xml",
-                                conditionalCoverageTargets: '70, 0, 0',
-                                failUnhealthy: false,
-                                failUnstable: false,
-                                lineCoverageTargets: '80, 0, 0',
-                                maxNumberOfBuilds: 0,
-                                methodCoverageTargets: '80, 0, 0',
-                                onlyStable: false,
-                                sourceEncoding: 'ASCII',
-                                zoomCoverageChart: false
-                            )
-                        }
-                    }
+                success{
+                    publishCoverage(
+                        adapters: [
+                            coberturaAdapter('reports/coverage.xml')
+                            ],
+                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                        tag: 'coverage'
+                    )
                 }
                 cleanup{
                     bat "del reports\\coverage.xml"
@@ -360,7 +302,7 @@ pipeline {
         stage("Packaging") {
             steps {
                 dir("source"){
-                    bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
+                    bat "${WORKSPACE}\\venv\\36\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
                 }
             }
             post{
@@ -388,16 +330,17 @@ pipeline {
                 timestamps()
             }
             environment{
-                PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.6'}\\Scripts;${PATH}"
+                PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${PATH}"
             }
             stages{
-                stage("Upload to Devpi staging") {
+                stage("Upload to DevPi Staging") {
                     steps {
+                        bat "pip.exe install devpi-client"
                         bat "devpi.exe use https://devpi.library.illinois.edu"
                         bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
                     }
                 }
-                stage("Test DevPi packages") {
+                stage("Test DevPi Packages") {
                     parallel {
                         stage("Source Distribution: .zip") {
                             agent {
@@ -412,7 +355,7 @@ pipeline {
                                 PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                             }
                             stages{
-                                stage("Building DevPi Testing venv for .zip package"){
+                                stage("Building DevPi Testing venv for .zip Package"){
                                     steps{
                                         lock("system_python_${NODE_NAME}"){
                                             bat "python -m venv venv"
@@ -515,11 +458,11 @@ pipeline {
                         script {
                             input "Release ${env.PKG_NAME} ${env.PKG_VERSION} to DevPi Production?"
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                                bat "venv\\36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             }
 
-                            bat "venv\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
+                            bat "venv\\36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
+                            bat "venv\\36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
                         }
                     }
                 }
@@ -529,9 +472,9 @@ pipeline {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
                     script {
                         withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            bat "venv\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "venv\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
+                            bat "venv\\36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
+                            bat "venv\\36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
+                            bat "venv\\36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
                         }
 
                     }
@@ -541,7 +484,7 @@ pipeline {
                     echo "At least one package format on DevPi failed."
                 }
                 cleanup{
-                    remove_from_devpi("venv\\Scripts\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
+                    remove_from_devpi("venv\\Scripts\\36\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
                 }
             }
         }
@@ -585,27 +528,27 @@ pipeline {
     }
     post {
         cleanup{
-            echo "Cleaning up."
-            script {
-                if(fileExists('source/setup.py')){
-                    dir("source"){
-                        try{
-                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
-                        } catch (Exception ex) {
-                            echo "Unable to succesfully run clean. Purging source directory."
-                            deleteDir()
-                        }   
-                    }
-                }                
-
-            }
+//            echo "Cleaning up."
+//            script {
+//                if(fileExists('source/setup.py')){
+//                    dir("source"){
+//                        try{
+//                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
+//                        } catch (Exception ex) {
+//                            echo "Unable to succesfully run clean. Purging source directory."
+//                            deleteDir()
+//                        }
+//                    }
+//                }
+//
+//            }
             cleanWs deleteDirs: true, patterns: [
                     [pattern: 'build*', type: 'INCLUDE'],
                     [pattern: 'certs', type: 'INCLUDE'],
                     [pattern: 'dist*', type: 'INCLUDE'],
                     [pattern: 'logs*', type: 'INCLUDE'],
                     [pattern: 'reports*', type: 'INCLUDE'],
-                    [pattern: '.tox', type: 'INCLUDE'],
+//                    [pattern: '.tox', type: 'INCLUDE'],
                     [pattern: '*@tmp', type: 'INCLUDE']
                     ]
         }
