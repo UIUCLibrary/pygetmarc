@@ -220,11 +220,10 @@ pipeline {
                         dir("source"){
                             script{
                                 try{
-                                    bat "tox --workdir ${WORKSPACE}\\.tox"
-                                } catch (exc){
-                                    bat "tox --workdir ${WORKSPACE}\\.tox --recreate"
+                                  bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox"
+                                } catch (exc) {
+                                  bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --recreate"
                                 }
-
                             }
                         }
                         
