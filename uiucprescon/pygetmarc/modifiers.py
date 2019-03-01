@@ -4,7 +4,7 @@ from xml.dom import minidom
 from xml.etree import ElementTree as ET
 
 try:
-    from importlib.resources import read_text
+    from importlib.resources import read_text  # type: ignore
 except ModuleNotFoundError:
     from importlib_resources import read_text
 
