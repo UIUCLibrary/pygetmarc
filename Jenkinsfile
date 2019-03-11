@@ -351,11 +351,12 @@ pipeline {
                             options {
                                 skipDefaultCheckout(true)
                             }
-                            environment {
-                                PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-                            }
+
                             stages{
                                 stage("Building DevPi Testing venv for .zip Package"){
+                                    environment {
+                                        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
+                                    }
                                     steps{
                                         lock("system_python_${NODE_NAME}"){
                                             bat "python -m venv venv"
@@ -366,6 +367,9 @@ pipeline {
                                 stage("Testing DevPi zip Package"){
                                     options{
                                         timeout(20)
+                                    }
+                                    environment {
+                                        PATH = "${WORKSPACE}\\venv\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                                     }
                                     steps {
                                         echo "Testing Source tar.gz package in devpi"
