@@ -374,7 +374,7 @@ pipeline {
                                         lock("system_python_${NODE_NAME}"){
                                             bat "python -m venv venv"
                                         }
-                                        bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install setuptools --upgrade && venv\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
+                                        bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install setuptools --upgrade && venv\\Scripts\\pip.exe install \"tox<3.8\" detox devpi-client"
                                     }
                                 }
                                 stage("Testing DevPi zip Package"){
