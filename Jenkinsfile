@@ -89,7 +89,7 @@ pipeline {
                                 bat "venv\\36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat "venv\\36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed"
+                        bat 'venv\\36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" '
                     }
                     post{
                         success{
@@ -182,25 +182,38 @@ pipeline {
                                 dir("source"){
                                     script{
                                         try{
-                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox"
+                                            bat (
+                                                label: "Run Tox",
+                                                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v --result-json=${WORKSPACE}\\logs\\tox_report.json"
+                                            )
                                         } catch (exc) {
-                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --recreate"
+                                            bat (
+                                                label: "Run Tox with new environments",
+                                                script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v --result-json=${WORKSPACE}\\logs\\tox_report.json"
+                                            )
                                         }
+//                                        try{
+//                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox"
+//                                        } catch (exc) {
+//                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --recreate"
+//                                        }
                                     }
                                 }
 
                             }
                             post {
                                 always {
-                                    recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/**/*.log')])
-                                    archiveArtifacts artifacts: ".tox/**/*.log", allowEmptyArchive: true
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: '.tox/py*/log/*.log,.tox/log/*.log,logs/tox_report.json'
+                                    recordIssues(tools: [pep8(id: 'tox', name: 'Tox', pattern: '.tox/py*/log/*.log,.tox/log/*.log')])
                                 }
                                 cleanup{
                                     cleanWs(
                                         patterns: [
-                                                [pattern: 'tox/**/*.log', type: 'INCLUDE']
-                                            ]
-                                        )
+                                            [pattern: '.tox/py*/log/*.log', type: 'INCLUDE'],
+                                            [pattern: '.tox/log/*.log', type: 'INCLUDE'],
+                                            [pattern: 'logs/rox_report.json', type: 'INCLUDE']
+                                        ]
+                                    )
                                 }
                             }
                         }
