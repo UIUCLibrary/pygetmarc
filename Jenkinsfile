@@ -89,7 +89,7 @@ pipeline {
                                 bat "venv\\36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
                             }
                         }
-                        bat 'venv\\36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed && venv\\36\\Scripts\\pip.exe install \"tox<3.7\" '
+                        bat 'venv\\36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed && venv\\36\\Scripts\\pip.exe install \"tox>=3.7,<3.8\" '
                     }
                     post{
                         success{
@@ -374,7 +374,7 @@ pipeline {
                                         lock("system_python_${NODE_NAME}"){
                                             bat "python -m venv venv"
                                         }
-                                        bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install setuptools --upgrade && venv\\Scripts\\pip.exe install \"tox<3.8\" detox devpi-client"
+                                        bat "venv\\Scripts\\python.exe -m pip install pip --upgrade && venv\\Scripts\\pip.exe install setuptools --upgrade && venv\\Scripts\\pip.exe install \"tox<3.7\" detox devpi-client"
                                     }
                                 }
                                 stage("Testing DevPi zip Package"){
