@@ -349,8 +349,14 @@ pipeline {
                 stage("Upload to DevPi Staging") {
                     steps {
                         bat "pip.exe install devpi-client"
-                        bat "devpi.exe use https://devpi.library.illinois.edu"
-                        bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
+                        devpiUpload(
+                            devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+                            url: "https://devpi.library.illinois.edu",
+                            index: "${env.BRANCH_NAME}_staging",
+                            distPath: "dist"
+                            )
+//                        bat "devpi.exe use https://devpi.library.illinois.edu"
+//                        bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
                     }
                 }
                 stage("Test DevPi Packages") {
