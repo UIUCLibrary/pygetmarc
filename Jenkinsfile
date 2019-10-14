@@ -75,7 +75,7 @@ pipeline {
                 }
                 stage("Creating Virtualenv for Building"){
                     environment{
-                        PATH = "${tool 'CPython-3.7'};$PATH"
+                        PATH = "${tool 'CPython-3.6'};$PATH"
                     }
                     steps{
                         bat "python -m venv venv\\36"
