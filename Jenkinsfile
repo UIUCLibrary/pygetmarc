@@ -73,6 +73,24 @@ pipeline {
                         }
                     }
                 }
+                stage("Getting Distribution Info"){
+                    environment{
+                        PATH = "${tool 'CPython-3.7'};$PATH"
+                    }
+                    steps{
+                        dir("source"){
+                            bat "python setup.py dist_info"
+                        }
+                    }
+                    post{
+                        success{
+                            dir("source"){
+                                stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
+                                archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
+                            }
+                        }
+                    }
+                }
                 stage("Creating Virtualenv for Building"){
                     environment{
                         PATH = "${tool 'CPython-3.6'};$PATH"
