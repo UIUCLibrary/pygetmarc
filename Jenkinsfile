@@ -115,13 +115,6 @@ pipeline {
                     }
                 }
             }
-//            post{
-//                success{
-//                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
-//                }
-//
-//            }
-
         }
 
         stage('Build') {
@@ -356,8 +349,6 @@ pipeline {
             }
             environment{
                 PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${PATH}"
-                PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
-                PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
             }
             stages{
                 stage("Upload to DevPi Staging") {
@@ -406,16 +397,20 @@ pipeline {
                                     }
                                     steps {
                                         echo "Testing Source tar.gz package in devpi"
+                                        unstash "DIST-INFO"
+                                        script{
+                                            def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
 
-                                        devpiTest(
-                                            devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-                                            url: "https://devpi.library.illinois.edu",
-                                            index: "${env.BRANCH_NAME}_staging",
-                                            pkgName: "${env.PKG_NAME}",
-                                            pkgVersion: "${env.PKG_VERSION}",
-                                            pkgRegex: "zip",
-                                            detox: false
-                                        )
+                                            devpiTest(
+                                                devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+                                                url: "https://devpi.library.illinois.edu",
+                                                index: "${env.BRANCH_NAME}_staging",
+                                                pkgName: "${props.Name}",
+                                                pkgVersion: "${props.Version}",
+                                                pkgRegex: "zip",
+                                                detox: false
+                                            )
+                                        }
                                         echo "Finished testing Source Distribution: .zip"
                                     }
 
@@ -465,16 +460,20 @@ pipeline {
                                     }
                                     steps {
                                         echo "Testing Whl package in devpi"
-                                        devpiTest(
-//                                                devpiExecutable: "venv\\36\\Scripts\\devpi.exe",
-                                            devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
-                                            url: "https://devpi.library.illinois.edu",
-                                            index: "${env.BRANCH_NAME}_staging",
-                                            pkgName: "${env.PKG_NAME}",
-                                            pkgVersion: "${env.PKG_VERSION}",
-                                            pkgRegex: "whl",
-                                            detox: false
-                                            )
+                                        unstash "DIST-INFO"
+                                        script{
+                                            def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
+                                            devpiTest(
+    //                                                devpiExecutable: "venv\\36\\Scripts\\devpi.exe",
+                                                devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
+                                                url: "https://devpi.library.illinois.edu",
+                                                index: "${env.BRANCH_NAME}_staging",
+                                                pkgName: "${props.Name}",
+                                                pkgVersion: "${props.Version}",
+                                                pkgRegex: "whl",
+                                                detox: false
+                                                )
+                                        }
 
                                         echo "Finished testing Built Distribution: .whl"
                                     }
@@ -492,14 +491,16 @@ pipeline {
                         }
                     }
                     steps {
+                        unstash "DIST-INFO"
                         script {
-                            input "Release ${env.PKG_NAME} ${env.PKG_VERSION} to DevPi Production?"
+                            def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
+                            input "Release ${props.Name} ${props.Version} to DevPi Production?"
                             withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
                                 bat "venv\\36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
                             }
 
                             bat "venv\\36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
-                            bat "venv\\36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} production/release"
+                            bat "venv\\36\\Scripts\\devpi.exe push ${props.Name}==${props.Version} production/release"
                         }
                     }
                 }
@@ -507,12 +508,12 @@ pipeline {
             post {
                 success {
                     echo "it Worked. Pushing file to ${env.BRANCH_NAME} index"
-                    script {
-                        withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                            bat "venv\\36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            bat "venv\\36\\Scripts\\devpi.exe use /${DEVPI_USERNAME}/${env.BRANCH_NAME}_staging"
-                            bat "venv\\36\\Scripts\\devpi.exe push ${env.PKG_NAME}==${env.PKG_VERSION} ${DEVPI_USERNAME}/${env.BRANCH_NAME}"
-                        }
+                    unstash "DIST-INFO"
+                    script{
+                        def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
+                        bat "venv\\36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${DEVPI_PASSWORD}"
+                        bat "venv\\36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging"
+                        bat "venv\\36\\Scripts\\devpi.exe push ${props.Name}==${props.Version} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
 
                     }
 
