@@ -28,8 +28,7 @@ pipeline {
     environment {
         PYTHON_LOCATION = "${tool 'CPython-3.6'}"
 //        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-        PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
-        PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
+
 
         DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
@@ -116,12 +115,12 @@ pipeline {
                     }
                 }
             }
-            post{
-                success{
-                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
-                }
-
-            }
+//            post{
+//                success{
+//                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
+//                }
+//
+//            }
 
         }
 
@@ -357,6 +356,8 @@ pipeline {
             }
             environment{
                 PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${PATH}"
+                PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
+                PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
             }
             stages{
                 stage("Upload to DevPi Staging") {
