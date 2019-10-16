@@ -28,9 +28,6 @@ pipeline {
     environment {
         PYTHON_LOCATION = "${tool 'CPython-3.6'}"
 //        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-
-
-        DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
     }
@@ -349,6 +346,7 @@ pipeline {
             }
             environment{
                 PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${PATH}"
+                DEVPI = credentials("DS_devpi")
             }
             stages{
                 stage("Upload to DevPi Staging") {
