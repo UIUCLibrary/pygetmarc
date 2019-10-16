@@ -28,9 +28,8 @@ pipeline {
     environment {
         PYTHON_LOCATION = "${tool 'CPython-3.6'}"
 //        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
-        PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
-        PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
-        DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+
+
         DEVPI = credentials("DS_devpi")
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
@@ -73,6 +72,24 @@ pipeline {
                         }
                     }
                 }
+                stage("Getting Distribution Info"){
+                    environment{
+                        PATH = "${tool 'CPython-3.7'};$PATH"
+                    }
+                    steps{
+                        dir("source"){
+                            bat "python setup.py dist_info"
+                        }
+                    }
+                    post{
+                        success{
+                            dir("source"){
+                                stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
+                                archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
+                            }
+                        }
+                    }
+                }
                 stage("Creating Virtualenv for Building"){
                     environment{
                         PATH = "${tool 'CPython-3.6'};$PATH"
@@ -98,12 +115,12 @@ pipeline {
                     }
                 }
             }
-            post{
-                success{
-                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
-                }
-
-            }
+//            post{
+//                success{
+//                    echo "Configured ${env.PKG_NAME}, version ${env.PKG_VERSION}, for testing."
+//                }
+//
+//            }
 
         }
 
@@ -148,7 +165,12 @@ pipeline {
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
+                            unstash "DIST-INFO"
+                            script{
+                                def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
+                                def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            }
                             stash includes: 'build/docs/html/**', name: 'docs'
                         }
                         failure{
@@ -334,6 +356,8 @@ pipeline {
             }
             environment{
                 PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${PATH}"
+                PKG_NAME = pythonPackageName(toolName: "CPython-3.6")
+                PKG_VERSION = pythonPackageVersion(toolName: "CPython-3.6")
             }
             stages{
                 stage("Upload to DevPi Staging") {
