@@ -495,9 +495,7 @@ pipeline {
                         script {
                             def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
                             input "Release ${props.Name} ${props.Version} to DevPi Production?"
-                            withCredentials([usernamePassword(credentialsId: 'DS_devpi', usernameVariable: 'DEVPI_USERNAME', passwordVariable: 'DEVPI_PASSWORD')]) {
-                                bat "venv\\36\\Scripts\\devpi.exe login ${DEVPI_USERNAME} --password ${DEVPI_PASSWORD}"
-                            }
+                            bat "venv\\36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW}"
 
                             bat "venv\\36\\Scripts\\devpi.exe use /DS_Jenkins/${env.BRANCH_NAME}_staging"
                             bat "venv\\36\\Scripts\\devpi.exe push ${props.Name}==${props.Version} production/release"
@@ -511,7 +509,7 @@ pipeline {
                     unstash "DIST-INFO"
                     script{
                         def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
-                        bat "venv\\36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${DEVPI_PASSWORD}"
+                        bat "venv\\36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW}"
                         bat "venv\\36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging"
                         bat "venv\\36\\Scripts\\devpi.exe push ${props.Name}==${props.Version} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
 
