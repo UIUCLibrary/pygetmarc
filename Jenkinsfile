@@ -18,7 +18,7 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 
 pipeline {
     agent {
-        label "Windows"
+        label "Windows && Python3"
     }
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
@@ -42,11 +42,7 @@ pipeline {
     parameters {
         booleanParam(name: "FRESH_WORKSPACE", defaultValue: false, description: "Purge workspace before staring and checking out source")
         string(name: "PROJECT_NAME", defaultValue: "pyGetMarc", description: "Name given to the project")
-        booleanParam(name: "TEST_RUN_DOCTEST", defaultValue: true, description: "Test documentation")
-        booleanParam(name: "TEST_RUN_FLAKE8", defaultValue: true, description: "Run Flake8 static analysis")
-        booleanParam(name: "TEST_RUN_MYPY", defaultValue: true, description: "Run MyPy static analysis")
         booleanParam(name: "TEST_RUN_INTEGRATION", defaultValue: true, description: "Run integration tests")
-        booleanParam(name: "TEST_RUN_UNIT_TESTS", defaultValue: true, description: "Run automated unit tests")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a package")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
@@ -78,6 +74,9 @@ pipeline {
                     }
                 }
                 stage("Creating Virtualenv for Building"){
+                    environment{
+                        PATH = "${tool 'CPython-3.6'};$PATH"
+                    }
                     steps{
                         bat "python -m venv venv\\36"
                         script {
@@ -218,9 +217,6 @@ pipeline {
                             }
                         }
                         stage("Run Doctest Tests"){
-                            when {
-                               equals expected: true, actual: params.TEST_RUN_DOCTEST
-                            }
                             steps {
                                 dir("source"){
                                     bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
@@ -234,9 +230,6 @@ pipeline {
                             }
                         }
                         stage("Run MyPy Static Analysis") {
-                            when {
-                                equals expected: true, actual: params.TEST_RUN_MYPY
-                            }
                             steps{
                                 bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html) && (if not exist logs mkdir logs)"
                                 script{
@@ -276,9 +269,6 @@ pipeline {
                             }
                         }
                         stage("Run Unit Tests") {
-                            when {
-                                equals expected: true, actual: params.TEST_RUN_UNIT_TESTS
-                            }
                             steps {
                                 dir("source"){
                                     lock("${WORKSPACE}/reports/coverage.xml"){
