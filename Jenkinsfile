@@ -152,9 +152,6 @@ pipeline {
                     }
                 }
                 stage("Sphinx Documentation"){
-                    environment{
-                        DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
-                    }
                     steps {
                         bat "pip install sphinx"
                         echo "Building docs on ${env.NODE_NAME}"
@@ -169,7 +166,12 @@ pipeline {
                         }
                         success{
                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${env.DOC_ZIP_FILENAME}"
+                            unstash "DIST-INFO"
+                            script{
+                                def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
+                                def DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
+                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                            }
                             stash includes: 'build/docs/html/**', name: 'docs'
                         }
                         failure{
