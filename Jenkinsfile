@@ -521,7 +521,11 @@ pipeline {
                     echo "At least one package format on DevPi failed."
                 }
                 cleanup{
-                    remove_from_devpi("venv\\Scripts\\36\\devpi.exe", "${env.PKG_NAME}", "${env.PKG_VERSION}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
+                    unstash "DIST-INFO"
+                    script{
+                        def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
+                        remove_from_devpi("venv\\Scripts\\36\\devpi.exe", "${props.Name}", "${props.Version}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
+                    }
                 }
             }
         }
