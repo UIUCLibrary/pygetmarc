@@ -116,11 +116,6 @@ pipeline {
         }
         stage("Testing") {
             stages{
-                stage("Installing Testing Python Packages"){
-                    steps{
-                        bat "venv\\36\\Scripts\\pip.exe install pytest pytest-cov lxml -r requirements-dev.txt --upgrade-strategy only-if-needed"
-                    }
-                }
                 stage("Running Tests"){
                     parallel {
                         stage("Run Tox Test") {
@@ -166,7 +161,7 @@ pipeline {
                         }
                         stage("Run Doctest Tests"){
                             steps {
-                                bat "sphinx-build.exe -b doctest docs ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                             }
                             post{
                                 always {
