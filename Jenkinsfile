@@ -179,12 +179,12 @@ pipeline {
                                         try{
                                             bat (
                                                 label: "Run Tox",
-                                                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v --result-json=${WORKSPACE}\\logs\\tox_report.json -e py"
+                                                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v  -e py"
                                             )
                                         } catch (exc) {
                                             bat (
                                                 label: "Run Tox with new environments",
-                                                script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v --result-json=${WORKSPACE}\\logs\\tox_report.json -e py"
+                                                script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v -e py"
                                             )
                                         }
 //                                        try{
@@ -206,7 +206,7 @@ pipeline {
                                         patterns: [
                                             [pattern: '.tox/py*/log/*.log', type: 'INCLUDE'],
                                             [pattern: '.tox/log/*.log', type: 'INCLUDE'],
-                                            [pattern: 'logs/rox_report.json', type: 'INCLUDE']
+                                            [pattern: 'logs/tox_report.json', type: 'INCLUDE']
                                         ]
                                     )
                                 }
