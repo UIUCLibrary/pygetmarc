@@ -76,7 +76,7 @@ pipeline {
                 stage("Python Package"){
                     steps {
                         
-                        
+                        bat "if not exist logs mkdir logs"
                         dir("source"){
                             powershell "& python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
                         }
@@ -97,6 +97,7 @@ pipeline {
                 stage("Sphinx Documentation"){
                     steps {
                         echo "Building docs on ${env.NODE_NAME}"
+                        bat "if not exist logs mkdir logs"
                         dir("source"){
                             bat "sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
                         }
