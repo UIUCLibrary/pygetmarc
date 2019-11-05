@@ -18,7 +18,11 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 
 pipeline {
     agent {
-        label "Windows && Python3"
+      dockerfile {
+            filename 'ci\\docker\\windows\\Dockerfile'
+            dir "source"
+            label 'windows&&docker'
+          }
     }
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
