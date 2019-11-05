@@ -20,14 +20,12 @@ pipeline {
     agent {
       dockerfile {
             filename 'ci\\docker\\windows\\Dockerfile'
-            dir "source"
             label 'windows&&docker'
           }
     }
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
-        checkoutToSubdirectory("source")
     }
     environment {
 //        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
@@ -55,16 +53,12 @@ pipeline {
             stages{
                 stage("Getting Distribution Info"){
                     steps{
-                        dir("source"){
-                            bat "python setup.py dist_info"
-                        }
+                        bat "python setup.py dist_info"
                     }
                     post{
                         success{
-                            dir("source"){
-                                stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
-                                archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
-                            }
+                            stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
+                            archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
                         }
                     }
                 }
@@ -77,10 +71,8 @@ pipeline {
                     steps {
                         
                         bat "if not exist logs mkdir logs"
-                        dir("source"){
-                            powershell "& python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
-                        }
-                        
+                        powershell "& python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
+
                     }
                     post{
                         always{
@@ -98,9 +90,7 @@ pipeline {
                     steps {
                         echo "Building docs on ${env.NODE_NAME}"
                         bat "if not exist logs mkdir logs"
-                        dir("source"){
-                            bat "sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
-                        }
+                        bat "sphinx-build.exe -b html ${WORKSPACE}\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
                     }
                     post{
                         always {
@@ -128,7 +118,7 @@ pipeline {
             stages{
                 stage("Installing Testing Python Packages"){
                     steps{
-                        bat "venv\\36\\Scripts\\pip.exe install pytest pytest-cov lxml -r source\\requirements-dev.txt --upgrade-strategy only-if-needed"
+                        bat "venv\\36\\Scripts\\pip.exe install pytest pytest-cov lxml -r requirements-dev.txt --upgrade-strategy only-if-needed"
                     }
                 }
                 stage("Running Tests"){
@@ -138,25 +128,23 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_TOX
                             }
                             steps {
-                                dir("source"){
-                                    script{
-                                        try{
-                                            bat (
-                                                label: "Run Tox",
-                                                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v  -e py"
-                                            )
-                                        } catch (exc) {
-                                            bat (
-                                                label: "Run Tox with new environments",
-                                                script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v -e py"
-                                            )
-                                        }
+                                script{
+                                    try{
+                                        bat (
+                                            label: "Run Tox",
+                                            script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v  -e py"
+                                        )
+                                    } catch (exc) {
+                                        bat (
+                                            label: "Run Tox with new environments",
+                                            script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v -e py"
+                                        )
+                                    }
 //                                        try{
 //                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox"
 //                                        } catch (exc) {
 //                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --recreate"
 //                                        }
-                                    }
                                 }
 
                             }
@@ -178,9 +166,7 @@ pipeline {
                         }
                         stage("Run Doctest Tests"){
                             steps {
-                                dir("source"){
-                                    bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
-                                }
+                                bat "sphinx-build.exe -b doctest docs ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                             }
                             post{
                                 always {
@@ -194,9 +180,7 @@ pipeline {
                                 bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html) && (if not exist logs mkdir logs)"
                                 script{
                                     try{
-                                        dir("source"){
-                                            bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
-                                        }
+                                        bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                     } catch (exc) {
                                         echo "MyPy found some warnings"
                                     }
@@ -214,11 +198,8 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
                             steps {
-                                dir("source"){
-
-                                    lock("${WORKSPACE}/reports/coverage.xml"){
-                                        bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
-                                    }
+                                lock("${WORKSPACE}/reports/coverage.xml"){
+                                    bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
                                 }
                             }
                             post {
@@ -230,10 +211,8 @@ pipeline {
                         }
                         stage("Run Unit Tests") {
                             steps {
-                                dir("source"){
-                                    lock("${WORKSPACE}/reports/coverage.xml"){
-                                        bat "pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
-                                    }
+                                lock("${WORKSPACE}/reports/coverage.xml"){
+                                    bat "pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
                                 }
                             }
                             post {
@@ -264,9 +243,7 @@ pipeline {
     
         stage("Packaging") {
             steps {
-                dir("source"){
-                    bat "python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
-                }
+                bat "python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
             }
             post{
                 success{
