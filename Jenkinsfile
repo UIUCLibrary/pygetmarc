@@ -109,9 +109,6 @@ pipeline {
         }
 
         stage('Build') {
-            environment{
-                PATH = "${WORKSPACE}\\venv\\36\\Scripts;${PATH}"
-            }
             parallel {
                 stage("Python Package"){
                     steps {
@@ -136,7 +133,6 @@ pipeline {
                 }
                 stage("Sphinx Documentation"){
                     steps {
-                        bat "pip install sphinx"
                         echo "Building docs on ${env.NODE_NAME}"
                         dir("source"){
                             bat "sphinx-build.exe -b html ${WORKSPACE}\\source\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
@@ -172,16 +168,10 @@ pipeline {
                     }
                 }
                 stage("Running Tests"){
-                    environment {
-                        PATH = "${WORKSPACE}\\venv\\36\\Scripts;${PATH}"
-                    }
                     parallel {
                         stage("Run Tox Test") {
                             when {
                                 equals expected: true, actual: params.TEST_RUN_TOX
-                            }
-                            environment {
-                                PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
                             }
                             steps {
                                 dir("source"){
@@ -189,12 +179,12 @@ pipeline {
                                         try{
                                             bat (
                                                 label: "Run Tox",
-                                                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v --result-json=${WORKSPACE}\\logs\\tox_report.json"
+                                                script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v --result-json=${WORKSPACE}\\logs\\tox_report.json -e py"
                                             )
                                         } catch (exc) {
                                             bat (
                                                 label: "Run Tox with new environments",
-                                                script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v --result-json=${WORKSPACE}\\logs\\tox_report.json"
+                                                script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v --result-json=${WORKSPACE}\\logs\\tox_report.json -e py"
                                             )
                                         }
 //                                        try{
@@ -311,7 +301,7 @@ pipeline {
         stage("Packaging") {
             steps {
                 dir("source"){
-                    bat "${WORKSPACE}\\venv\\36\\Scripts\\python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
+                    bat "python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
                 }
             }
             post{
@@ -339,7 +329,6 @@ pipeline {
                 timestamps()
             }
             environment{
-                PATH = "${WORKSPACE}\\venv\\36\\Scripts;${tool 'CPython-3.6'};${PATH}"
                 DEVPI = credentials("DS_devpi")
             }
             stages{
