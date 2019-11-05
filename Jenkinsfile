@@ -53,22 +53,6 @@ pipeline {
     {
         stage("Configure") {
             stages{
-
-                stage("Purge All Existing Data in Workspace"){
-
-                    when{
-                        anyOf{
-                                equals expected: true, actual: params.FRESH_WORKSPACE
-                                triggeredBy "TimerTriggerCause"
-                            }
-                    }
-                    steps{
-                        deleteDir()
-                        dir("source"){
-                            checkout scm
-                        }
-                    }
-                }
                 stage("Getting Distribution Info"){
                     steps{
                         dir("source"){
@@ -81,27 +65,6 @@ pipeline {
                                 stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
                                 archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
                             }
-                        }
-                    }
-                }
-                stage("Creating Virtualenv for Building"){
-                    steps{
-                        bat "python -m venv venv\\36"
-                        script {
-                            try {
-                                bat "call venv\\36\\Scripts\\python.exe -m pip install -U pip"
-                            }
-                            catch (exc) {
-                                bat "python -m venv venv\\36"
-                                bat "venv\\36\\Scripts\\python.exe -m pip install -U pip --no-cache-dir"
-                            }
-                        }
-                        bat 'venv\\36\\Scripts\\pip.exe install -r source\\requirements.txt --upgrade-strategy only-if-needed && venv\\36\\Scripts\\pip.exe install \"tox>=3.7,<3.8\" '
-                    }
-                    post{
-                        success{
-                            bat "(if not exist logs mkdir logs) && venv\\36\\Scripts\\pip.exe list > ${WORKSPACE}\\logs\\pippackages_venv_${NODE_NAME}.log"
-                            archiveArtifacts artifacts: "logs/pippackages_venv_${NODE_NAME}.log"                            
                         }
                     }
                 }
