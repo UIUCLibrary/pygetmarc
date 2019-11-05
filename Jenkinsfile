@@ -30,7 +30,6 @@ pipeline {
         checkoutToSubdirectory("source")
     }
     environment {
-        PYTHON_LOCATION = "${tool 'CPython-3.6'}"
 //        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
         PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
@@ -53,9 +52,6 @@ pipeline {
     stages 
     {
         stage("Configure") {
-            environment{
-                PATH = "${env.PYTHON_LOCATION};${PATH}"
-            }
             stages{
 
                 stage("Purge All Existing Data in Workspace"){
@@ -74,9 +70,6 @@ pipeline {
                     }
                 }
                 stage("Getting Distribution Info"){
-                    environment{
-                        PATH = "${tool 'CPython-3.7'};$PATH"
-                    }
                     steps{
                         dir("source"){
                             bat "python setup.py dist_info"
@@ -92,9 +85,6 @@ pipeline {
                     }
                 }
                 stage("Creating Virtualenv for Building"){
-                    environment{
-                        PATH = "${tool 'CPython-3.6'};$PATH"
-                    }
                     steps{
                         bat "python -m venv venv\\36"
                         script {
