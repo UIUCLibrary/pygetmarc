@@ -259,6 +259,8 @@ pipeline {
                         script{
                             try{
                                 unstash "integration_tests_coverage"
+                            } finally{
+
                             }
                         }
                     }
