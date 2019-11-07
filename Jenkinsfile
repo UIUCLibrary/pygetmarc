@@ -42,27 +42,23 @@ pipeline {
         string(name: 'URL_SUBFOLDER', defaultValue: "pygetmarc", description: 'The directory that the docs should be saved under')
     }
     stages {
-        stage("Configure") {
+        stage("Getting Distribution Info"){
             agent {
               dockerfile {
                     filename 'ci\\docker\\windows\\Dockerfile'
                     label 'windows&&docker'
                   }
             }
-            stages{
-                stage("Getting Distribution Info"){
-                    steps{
-                        bat "python setup.py dist_info"
-                    }
-                    post{
-                        success{
-                            stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
-                            archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
-                        }
-                        cleanup{
-                            cleanWs notFailBuild: true
-                        }
-                    }
+            steps{
+                bat "python setup.py dist_info"
+            }
+            post{
+                success{
+                    stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
+                    archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
+                }
+                cleanup{
+                    cleanWs notFailBuild: true
                 }
             }
         }
