@@ -259,7 +259,9 @@ pipeline {
                         script{
                             try{
                                 unstash "integration_tests_coverage"
-                            } finally{}
+                            } catch (Exception ex) {
+                                echo "no integration test coverage file found"
+                            }
                         }
                         publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                     }
