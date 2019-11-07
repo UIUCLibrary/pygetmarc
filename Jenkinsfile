@@ -539,6 +539,9 @@ pipeline {
                         beforeAgent true
                     }
                     agent any
+                    options {
+                        skipDefaultCheckout(true)
+                    }
                     steps{
                         unstash "docs"
                         dir("build/docs/html/"){
