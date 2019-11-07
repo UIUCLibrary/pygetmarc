@@ -233,7 +233,6 @@ pipeline {
                                         adapters: [
                                             coberturaAdapter('reports/integration_tests_coverage.xml')
                                             ],
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                         tag: 'coverage'
                                     )
                                 }
@@ -256,7 +255,6 @@ pipeline {
                                         adapters: [
                                             coberturaAdapter('reports/unit_tests_coverage.xml')
                                             ],
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                         tag: 'coverage'
                                     )
                                 }
