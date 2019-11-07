@@ -276,7 +276,7 @@ pipeline {
                             }
                         }
                         bat "coverage combine"
-                        bat "coverage xml -o reports/coverage.xml"
+                        bat "coverage xml -o -i reports/coverage.xml"
                         publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                     }
                     post{
