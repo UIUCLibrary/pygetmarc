@@ -327,6 +327,7 @@ pipeline {
                         equals expected: "dev", actual: env.BRANCH_NAME
                     }
                 }
+                beforeAgent true
            }
            options{
                 timestamps()
