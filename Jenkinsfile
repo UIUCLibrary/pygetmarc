@@ -206,7 +206,7 @@ pipeline {
                                 //bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html)"
                                 //powershell "New-Item -ItemType Directory -Force -Path logs"
 
-                                sh "python -m venv venv && venv/bin/pip install mypy"
+                                sh "python -m venv venv && venv/bin/pip install mypy lxml"
                                 sh "mkdir -p logs"
                                 catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
                                     sh "venv/bin/mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log"
