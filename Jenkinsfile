@@ -524,10 +524,10 @@ pipeline {
             }
         }
     }
-    post {
-        cleanup{
-            echo "Cleaning up."
-            cleanWs notFailBuild: true
+    //post {
+    //    cleanup{
+    //        echo "Cleaning up."
+    //        cleanWs notFailBuild: true
   //          script {
 //  //              if(fileExists('source/setup.py')){
 //  //                  dir("source"){
@@ -551,6 +551,6 @@ pipeline {
 //  //                  [pattern: '.tox', type: 'INCLUDE'],
     //                [pattern: '*@tmp', type: 'INCLUDE']
     //                ]
-        }
-    }
+//        }
+//    }
 }
