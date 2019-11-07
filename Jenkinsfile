@@ -194,7 +194,7 @@ pipeline {
                         stage("Run MyPy Static Analysis") {
                             agent {
                                 docker {
-                                    image 'python3.7'
+                                    image 'python:3.7'
                                     label 'linux&&docker'
                                   }
                                   //dockerfile {
