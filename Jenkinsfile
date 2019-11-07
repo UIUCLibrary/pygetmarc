@@ -261,7 +261,7 @@ pipeline {
                                 unstash "integration_tests_coverage"
                             } finally{}
                         }
-                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('NEVER_STORE')
+                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                     }
                 }
             }
