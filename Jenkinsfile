@@ -309,6 +309,7 @@ pipeline {
                    }
                     steps {
                         bat "pip.exe install devpi-client"
+                        unstash "dist"
                         devpiUpload(
                             devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
                             url: "https://devpi.library.illinois.edu",
