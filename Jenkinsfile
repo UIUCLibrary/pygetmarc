@@ -568,6 +568,11 @@ pipeline {
                 }
 
             }
+             post {
+                cleanup{
+                    cleanWs notFailBuild: true
+                }
+            }
         }
     }
 }
