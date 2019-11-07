@@ -152,11 +152,6 @@ pipeline {
                                             script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v -e py"
                                         )
                                     }
-//                                        try{
-//                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox"
-//                                        } catch (exc) {
-//                                          bat "tox.exe --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -vv --recreate"
-//                                        }
                                 }
 
                             }
@@ -250,6 +245,7 @@ pipeline {
                 }
                 cleanup{
                     bat "del reports\\coverage.xml"
+                    cleanWs notFailBuild: true
                 }
             }
         }
