@@ -267,8 +267,10 @@ pipeline {
                     stash includes: 'dist/*.*', name: "dist"
                 }
                 cleanup{
-                    deleteDir()
-                    //cleanWs notFailBuild: true
+                    cleanWs(
+                        deleteDirs: true,
+                        notFailBuild: true
+                    )
                 }
             }
         }
