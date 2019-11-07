@@ -182,7 +182,8 @@ pipeline {
                             steps {
                                 unstash "docs"
                                 powershell "New-Item -ItemType Directory -Force -Path logs"
-                                bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                bat "coverage run sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                bat "coverage xml -o reports/doctest_coverage.xml"
                             }
                             post{
                                 always {
