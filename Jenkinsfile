@@ -331,6 +331,7 @@ pipeline {
            }
            options{
                 timestamps()
+                skipDefaultCheckout(true)
            }
            agent {
                 label "windows && Python3"
