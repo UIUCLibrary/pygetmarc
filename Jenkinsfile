@@ -120,6 +120,9 @@ pipeline {
                 failure{
                     echo "Failed to build Python package"
                 }
+                cleanup{
+                    cleanWs notFailBuild: true
+                }
             }
         }
         stage("Testing") {
