@@ -180,6 +180,7 @@ pipeline {
                         }
                         stage("Run Doctest Tests"){
                             steps {
+                                unstash "docs"
                                 bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                             }
                             post{
