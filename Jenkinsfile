@@ -126,18 +126,19 @@ pipeline {
             }
         }
         stage("Testing") {
-            agent {
-              dockerfile {
-                    filename 'ci\\docker\\windows\\Dockerfile'
-                    label 'windows&&docker'
-                  }
-            }
+
             stages{
                 stage("Running Tests"){
                     parallel {
                         stage("Run Tox Test") {
                             when {
                                 equals expected: true, actual: params.TEST_RUN_TOX
+                            }
+                            agent {
+                              dockerfile {
+                                    filename 'ci\\docker\\windows\\Dockerfile'
+                                    label 'windows&&docker'
+                                  }
                             }
                             steps {
                                 script{
@@ -172,6 +173,12 @@ pipeline {
                             }
                         }
                         stage("Run Doctest Tests"){
+                            agent {
+                              dockerfile {
+                                    filename 'ci\\docker\\windows\\Dockerfile'
+                                    label 'windows&&docker'
+                                  }
+                            }
                             steps {
                                 unstash "docs"
                                 bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
@@ -184,6 +191,12 @@ pipeline {
                             }
                         }
                         stage("Run MyPy Static Analysis") {
+                            agent {
+                                  dockerfile {
+                                        filename 'ci\\docker\\windows\\Dockerfile'
+                                        label 'windows&&docker'
+                                      }
+                            }
                             steps{
                                 bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html) && (if not exist logs mkdir logs)"
                                 catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
@@ -193,7 +206,6 @@ pipeline {
                             post {
                                 always {
                                     recordIssues(
-                                        sourceDirectory: "${WORKSPACE}",
                                         tools: [myPy(pattern: 'logs/mypy.log')]
                                         )
                                     archiveArtifacts artifacts: "logs/mypy.log"
@@ -202,6 +214,12 @@ pipeline {
                             }
                         }
                         stage("Run Integration Tests") {
+                            agent {
+                                  dockerfile {
+                                        filename 'ci\\docker\\windows\\Dockerfile'
+                                        label 'windows&&docker'
+                                  }
+                            }
                             when {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
@@ -218,6 +236,12 @@ pipeline {
                             }
                         }
                         stage("Run Unit Tests") {
+                            agent {
+                                  dockerfile {
+                                        filename 'ci\\docker\\windows\\Dockerfile'
+                                        label 'windows&&docker'
+                                  }
+                            }
                             steps {
                                 lock("${WORKSPACE}/reports/coverage.xml"){
                                     bat "pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
