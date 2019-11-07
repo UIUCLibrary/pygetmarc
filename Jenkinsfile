@@ -531,6 +531,7 @@ pipeline {
     post {
         cleanup{
             echo "Cleaning up."
+            cleanWs notFailBuild: true
   //          script {
 //  //              if(fileExists('source/setup.py')){
 //  //                  dir("source"){
