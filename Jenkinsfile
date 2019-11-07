@@ -181,6 +181,7 @@ pipeline {
                             }
                             steps {
                                 unstash "docs"
+                                powershell "New-Item -ItemType Directory -Force -Path logs"
                                 bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                             }
                             post{
@@ -198,7 +199,8 @@ pipeline {
                                       }
                             }
                             steps{
-                                bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html) && (if not exist logs mkdir logs)"
+                                bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html)"
+                                powershell "New-Item -ItemType Directory -Force -Path logs"
                                 catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
                                     bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
