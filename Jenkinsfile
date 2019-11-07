@@ -267,14 +267,7 @@ pipeline {
                     stash includes: 'dist/*.*', name: "dist"
                 }
                 cleanup{
-
-                    cleanWs(
-                        deleteDirs: true,
-                        patterns: [
-                            [pattern: '.git', type: 'EXCLUDE']
-                        ]
-
-                    )
+                    cleanWs(notFailBuild: true)
                 }
             }
         }
