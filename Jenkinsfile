@@ -23,9 +23,7 @@ pipeline {
         timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
     }
     environment {
-//        PATH = "${tool 'CPython-3.6'};${tool 'CPython-3.7'};$PATH"
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
-//        PIP_CACHE_DIR="${WORKSPACE}\\pipcache\\"
     }
     triggers {
         cron('@daily')
@@ -63,33 +61,6 @@ pipeline {
             }
         }
 
-        //tage('Build') {
-        //   parallel {
-
-                //stage("Python Package"){
-                //    agent {
-                //      dockerfile {
-                //            filename 'ci\\docker\\windows\\Dockerfile'
-                //            label 'windows&&docker'
-                //          }
-                //    }
-                //    steps {
-                //
-                //        bat "if not exist logs mkdir logs"
-                //        powershell "& python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
-                //    }
-                //    post{
-                //        always{
-                //            archiveArtifacts artifacts: "logs/build.log"
-                //        }
-                //        failure{
-                //            echo "Failed to build Python package"
-                //        }
-                //        success{
-                //            echo "Successfully built project is ./build."
-                //        }
-                //    }
-                //}
         stage("Sphinx Documentation"){
             agent {
               dockerfile {
@@ -182,14 +153,11 @@ pipeline {
                             steps {
                                 unstash "docs"
                                 powershell "New-Item -ItemType Directory -Force -Path logs"
-//                                bat "python -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                                 bat "coverage run -p -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                             }
                             post{
                                 always {
                                     stash includes: '.coverage.*', name: 'doctest_coverage'
-//                                    archiveArtifacts artifacts: "logs/doctest.log"
-
                                 }
                                 cleanup{
                                     cleanWs notFailBuild: true
@@ -234,11 +202,9 @@ pipeline {
                             }
                             steps {
                                 bat "coverage run -p --source=uiucprescon -m pytest -m integration"
-//                                bat "coverage xml -o reports/integration_tests_coverage.xml"
                             }
                             post {
                                 success{
-//                                    publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/integration_tests_coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                                     stash includes: '.coverage.*', name: 'integration_tests_coverage'
                                 }
 
@@ -253,13 +219,10 @@ pipeline {
                             }
                             steps {
                                 bat "coverage run -p --source=uiucprescon -m pytest"
-//                                bat "coverage xml -o reports/unit_tests_coverage.xml"
                             }
                             post {
                                 success{
                                     stash includes: '.coverage.*', name: 'unit_tests_coverage'
-//                                    stash includes: 'reports/unit_tests_coverage.xml', name: 'unit_tests_coverage'
-//                                    publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/unit_tests_coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                                 }
                             }
                         }
@@ -296,11 +259,6 @@ pipeline {
                     }
                 }
             }
-
-//                cleanup{
-//                    bat "del reports\\coverage.xml"
-//                    cleanWs notFailBuild: true
-//                }
         }
     
         stage("Packaging") {
@@ -362,8 +320,6 @@ pipeline {
                             index: "${env.BRANCH_NAME}_staging",
                             distPath: "dist"
                             )
-//                        bat "devpi.exe use https://devpi.library.illinois.edu"
-//                        bat "devpi use https://devpi.library.illinois.edu && devpi login ${env.DEVPI_USR} --password ${env.DEVPI_PSW} && devpi use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging && devpi upload --from-dir dist"
                     }
                 }
                 stage("Test DevPi Packages") {
@@ -423,11 +379,6 @@ pipeline {
                                 cleanup{
                                     cleanWs notFailBuild: true
                                 }
-//                                cleanup{
-//                                        cleanWs deleteDirs: true, patterns: [
-//                                            [pattern: 'certs', type: 'INCLUDE']
-//                                        ]
-//                                    }
                             }
 
                         }
@@ -469,7 +420,6 @@ pipeline {
                                         script{
                                             def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
                                             devpiTest(
-    //                                                devpiExecutable: "venv\\36\\Scripts\\devpi.exe",
                                                 devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
                                                 url: "https://devpi.library.illinois.edu",
                                                 index: "${env.BRANCH_NAME}_staging",
@@ -572,7 +522,6 @@ pipeline {
                     post{
                         cleanup{
                             deleteDir()
-//                            cleanWs notFailBuild: true
                         }
                     }
                 }
