@@ -299,6 +299,7 @@ pipeline {
            options{
                 timestamps()
            }
+           agent none
 
             environment{
                 DEVPI = credentials("DS_devpi")
