@@ -225,15 +225,23 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
                             steps {
-                                lock("${WORKSPACE}/reports/coverage.xml"){
-                                    bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
-                                }
+                                bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon"
                             }
                             post {
                                 always{
                                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
                                     junit "reports/junit-${env.NODE_NAME}-pytest.xml"
                                 }
+                                success{
+                                    publishCoverage(
+                                        adapters: [
+                                            coberturaAdapter('reports/coverage.xml')
+                                            ],
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                                        tag: 'coverage'
+                                    )
+                                }
+
                             }
                         }
                         stage("Run Unit Tests") {
@@ -244,35 +252,32 @@ pipeline {
                                   }
                             }
                             steps {
-                                lock("${WORKSPACE}/reports/coverage.xml"){
-                                    bat "pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon --cov-append"
-                                }
+                                bat "pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon"
                             }
                             post {
                                 always{
                                     publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-Unit tests', reportTitles: ''])
                                         junit "reports/junit-${env.NODE_NAME}-pytest.xml"
                                 }
+                                success{
+                                    publishCoverage(
+                                        adapters: [
+                                            coberturaAdapter('reports/coverage.xml')
+                                            ],
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
+                                        tag: 'coverage'
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-            post{
-                success{
-                    publishCoverage(
-                        adapters: [
-                            coberturaAdapter('reports/coverage.xml')
-                            ],
-                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
-                        tag: 'coverage'
-                    )
-                }
+
 //                cleanup{
 //                    bat "del reports\\coverage.xml"
 //                    cleanWs notFailBuild: true
 //                }
-            }
         }
     
         stage("Packaging") {
