@@ -17,12 +17,7 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 }
 
 pipeline {
-    agent {
-      dockerfile {
-            filename 'ci\\docker\\windows\\Dockerfile'
-            label 'windows&&docker'
-          }
-    }
+    agent none
     options {
         //disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
@@ -47,9 +42,14 @@ pipeline {
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
         string(name: 'URL_SUBFOLDER', defaultValue: "pygetmarc", description: 'The directory that the docs should be saved under')
     }
-    stages 
-    {
+    stages {
         stage("Configure") {
+            agent {
+              dockerfile {
+                    filename 'ci\\docker\\windows\\Dockerfile'
+                    label 'windows&&docker'
+                  }
+            }
             stages{
                 stage("Getting Distribution Info"){
                     steps{
@@ -67,7 +67,14 @@ pipeline {
 
         stage('Build') {
             parallel {
+
                 stage("Python Package"){
+                    agent {
+                      dockerfile {
+                            filename 'ci\\docker\\windows\\Dockerfile'
+                            label 'windows&&docker'
+                          }
+                    }
                     steps {
                         
                         bat "if not exist logs mkdir logs"
@@ -87,6 +94,12 @@ pipeline {
                     }
                 }
                 stage("Sphinx Documentation"){
+                    agent {
+                      dockerfile {
+                            filename 'ci\\docker\\windows\\Dockerfile'
+                            label 'windows&&docker'
+                          }
+                    }
                     steps {
                         echo "Building docs on ${env.NODE_NAME}"
                         bat "if not exist logs mkdir logs"
@@ -115,6 +128,12 @@ pipeline {
             }
         }
         stage("Testing") {
+            agent {
+              dockerfile {
+                    filename 'ci\\docker\\windows\\Dockerfile'
+                    label 'windows&&docker'
+                  }
+            }
             stages{
                 stage("Running Tests"){
                     parallel {
@@ -237,9 +256,16 @@ pipeline {
         }
     
         stage("Packaging") {
+            agent {
+              dockerfile {
+                    filename 'ci\\docker\\windows\\Dockerfile'
+                    label 'windows&&docker'
+                  }
+            }
             steps {
                 bat "python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
             }
+
             post{
                 success{
                     archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
@@ -260,10 +286,16 @@ pipeline {
                         equals expected: "dev", actual: env.BRANCH_NAME
                     }
                 }
-            }
-            options{
+           }
+           options{
                 timestamps()
-            }
+           }
+           agent {
+                dockerfile {
+                    filename 'ci\\docker\\windows\\Dockerfile'
+                    label 'windows&&docker'
+                }
+           }
             environment{
                 DEVPI = credentials("DS_devpi")
             }
@@ -451,7 +483,9 @@ pipeline {
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
                     }
+                    agent any
                     steps{
+                        unstash "docs"
                         dir("build/docs/html/"){
                             input 'Update project documentation?'
                             sshPublisher(
