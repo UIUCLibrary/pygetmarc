@@ -19,7 +19,7 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 pipeline {
     agent none
     options {
-        //disableConcurrentBuilds()  //each branch has 1 job running at a time
+        disableConcurrentBuilds()  //each branch has 1 job running at a time
         timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
     }
     environment {
