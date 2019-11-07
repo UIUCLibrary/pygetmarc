@@ -290,9 +290,9 @@ pipeline {
                         always{
                             archiveArtifacts artifacts: "reports/*.xml"
                         }
-                    }
-                    cleanup{
-                        cleanWs notFailBuild: true
+                        cleanup{
+                            cleanWs notFailBuild: true
+                        }
                     }
                 }
             }
