@@ -192,6 +192,7 @@ pipeline {
                             }
                             post {
                                 always {
+                                    bat "dir uiucprescon\\pygetmarc"
                                     recordIssues(tools: [myPy(pattern: 'logs/mypy.log')])
                                     archiveArtifacts artifacts: "logs/mypy.log"
                                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
