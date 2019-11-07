@@ -182,8 +182,9 @@ pipeline {
                             steps {
                                 unstash "docs"
                                 powershell "New-Item -ItemType Directory -Force -Path logs"
-                                bat "coverage run sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
-                                bat "coverage xml -o reports/doctest_coverage.xml"
+                                bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+//                                bat "coverage run sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+//                                bat "coverage xml -o reports/doctest_coverage.xml"
                             }
                             post{
                                 always {
@@ -226,13 +227,13 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
                             steps {
-                                bat "coverage run --source=uiucprescon -m pytest -m integration"
-                                bat "coverage xml -o reports/integration_tests_coverage.xml"
+                                bat "coverage run -p --source=uiucprescon -m pytest -m integration"
+//                                bat "coverage xml -o reports/integration_tests_coverage.xml"
                             }
                             post {
                                 success{
-                                    publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/integration_tests_coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
-//                                    stash includes: 'reports/integration_tests_coverage.xml', name: 'integration_tests_coverage'
+//                                    publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/integration_tests_coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
+                                    stash includes: '.coverage.*', name: 'integration_tests_coverage'
                                 }
 
                             }
@@ -245,37 +246,45 @@ pipeline {
                                   }
                             }
                             steps {
-                                bat "coverage run --source=uiucprescon -m pytest"
-                                bat "coverage xml -o reports/unit_tests_coverage.xml"
+                                bat "coverage run -p --source=uiucprescon -m pytest"
+//                                bat "coverage xml -o reports/unit_tests_coverage.xml"
                             }
                             post {
                                 success{
+                                    stash includes: '.coverage.*', name: 'unit_tests_coverage'
 //                                    stash includes: 'reports/unit_tests_coverage.xml', name: 'unit_tests_coverage'
-                                    publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/unit_tests_coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
+//                                    publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/unit_tests_coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                                 }
                             }
                         }
                     }
                 }
-//                stage("Submit Coverage Report"){
-//                    agent any
-//                    steps{
-//                        unstash "unit_tests_coverage"
-//                        script{
-//                            try{
-//                                unstash "integration_tests_coverage"
-//                            } catch (Exception ex) {
-//                                echo "no integration test coverage file found"
-//                            }
-//                        }
-//                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
-//                    }
-//                    post{
-//                        always{
-//                            archiveArtifacts artifacts: "reports/*.xml"
-//                        }
-//                    }
-//                }
+                stage("Submit Coverage Report"){
+                    agent {
+                          dockerfile {
+                                filename 'ci\\docker\\windows\\Dockerfile'
+                                label 'windows&&docker'
+                          }
+                    }
+                    steps{
+                        unstash "unit_tests_coverage"
+                        script{
+                            try{
+                                unstash "integration_tests_coverage"
+                            } catch (Exception ex) {
+                                echo "no integration test coverage file found"
+                            }
+                        }
+                        bat "coverage combine"
+                        bat "coverage xml -o reports/coverage.xml"
+                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
+                    }
+                    post{
+                        always{
+                            archiveArtifacts artifacts: "reports/*.xml"
+                        }
+                    }
+                }
             }
 
 //                cleanup{
