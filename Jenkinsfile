@@ -540,7 +540,7 @@ pipeline {
                                 publishers: [
                                     sshPublisherDesc(
                                         configName: 'apache-ns - lib-dccuser-updater', 
-                                        sshLabel: [label: 'Linux'], 
+                                        sshLabel: [label: 'Linux && !aws'],
                                         transfers: [sshTransfer(excludes: '', 
                                         execCommand: '', 
                                         execTimeout: 120000, 
