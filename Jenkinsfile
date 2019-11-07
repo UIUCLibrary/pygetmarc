@@ -229,12 +229,7 @@ pipeline {
                             }
                             post {
                                 success{
-                                    publishCoverage(
-                                        adapters: [
-                                            coberturaAdapter('reports/integration_tests_coverage.xml')
-                                            ],
-                                        tag: 'coverage'
-                                    )
+                                    stash includes: 'reports/integration_tests_coverage.xml', name: 'integration_tests_coverage'
                                 }
 
                             }
@@ -251,13 +246,19 @@ pipeline {
                             }
                             post {
                                 success{
-                                    publishCoverage(
-                                        adapters: [
-                                            coberturaAdapter('reports/unit_tests_coverage.xml')
-                                            ],
-                                        tag: 'coverage'
-                                    )
+                                    stash includes: 'reports/unit_tests_coverage.xml', name: 'unit_tests_coverage'
                                 }
+                            }
+                        }
+                    }
+                }
+                stage("Submit Coverage Report"){
+                    agent any
+                    steps{
+                        unstash "unit_tests_coverage"
+                        script{
+                            try{
+                                unstash "integration_tests_coverage"
                             }
                         }
                     }
