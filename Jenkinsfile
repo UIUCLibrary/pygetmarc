@@ -230,7 +230,8 @@ pipeline {
                             }
                             post {
                                 success{
-                                    stash includes: 'reports/integration_tests_coverage.xml', name: 'integration_tests_coverage'
+                                    publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/integration_tests_coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
+//                                    stash includes: 'reports/integration_tests_coverage.xml', name: 'integration_tests_coverage'
                                 }
 
                             }
@@ -248,31 +249,32 @@ pipeline {
                             }
                             post {
                                 success{
-                                    stash includes: 'reports/unit_tests_coverage.xml', name: 'unit_tests_coverage'
+//                                    stash includes: 'reports/unit_tests_coverage.xml', name: 'unit_tests_coverage'
+                                    publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/unit_tests_coverage.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                                 }
                             }
                         }
                     }
                 }
-                stage("Submit Coverage Report"){
-                    agent any
-                    steps{
-                        unstash "unit_tests_coverage"
-                        script{
-                            try{
-                                unstash "integration_tests_coverage"
-                            } catch (Exception ex) {
-                                echo "no integration test coverage file found"
-                            }
-                        }
-                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
-                    }
-                    post{
-                        always{
-                            archiveArtifacts artifacts: "reports/*.xml"
-                        }
-                    }
-                }
+//                stage("Submit Coverage Report"){
+//                    agent any
+//                    steps{
+//                        unstash "unit_tests_coverage"
+//                        script{
+//                            try{
+//                                unstash "integration_tests_coverage"
+//                            } catch (Exception ex) {
+//                                echo "no integration test coverage file found"
+//                            }
+//                        }
+//                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
+//                    }
+//                    post{
+//                        always{
+//                            archiveArtifacts artifacts: "reports/*.xml"
+//                        }
+//                    }
+//                }
             }
 
 //                cleanup{
