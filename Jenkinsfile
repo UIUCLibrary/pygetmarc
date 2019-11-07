@@ -513,9 +513,9 @@ pipeline {
                     unstash "DIST-INFO"
                     script{
                         def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
-                        bat "venv\\36\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW}"
-                        bat "venv\\36\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging"
-                        bat "venv\\36\\Scripts\\devpi.exe push ${props.Name}==${props.Version} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
+                        bat "venv\\Scripts\\devpi.exe login ${env.DEVPI_USR} --password ${env.DEVPI_PSW}"
+                        bat "venv\\Scripts\\devpi.exe use /${env.DEVPI_USR}/${env.BRANCH_NAME}_staging"
+                        bat "venv\\Scripts\\devpi.exe push ${props.Name}==${props.Version} ${env.DEVPI_USR}/${env.BRANCH_NAME}"
 
                     }
 
@@ -527,7 +527,7 @@ pipeline {
                     unstash "DIST-INFO"
                     script{
                         def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
-                        remove_from_devpi("venv\\36\\Scripts\\devpi.exe", "${props.Name}", "${props.Version}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
+                        remove_from_devpi("venv\\Scripts\\devpi.exe", "${props.Name}", "${props.Version}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
                     }
                     cleanWs notFailBuild: true
                 }
