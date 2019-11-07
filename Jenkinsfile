@@ -259,10 +259,9 @@ pipeline {
                         script{
                             try{
                                 unstash "integration_tests_coverage"
-                            } finally{
-
-                            }
+                            } finally{}
                         }
+                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('NEVER_STORE')
                     }
                 }
             }
