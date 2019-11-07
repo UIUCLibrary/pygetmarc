@@ -370,10 +370,13 @@ pipeline {
 
                             post {
                                 cleanup{
-                                        cleanWs deleteDirs: true, patterns: [
-                                            [pattern: 'certs', type: 'INCLUDE']
-                                        ]
-                                    }
+                                    cleanWs notFailBuild: true
+                                }
+//                                cleanup{
+//                                        cleanWs deleteDirs: true, patterns: [
+//                                            [pattern: 'certs', type: 'INCLUDE']
+//                                        ]
+//                                    }
                             }
 
                         }
@@ -525,10 +528,10 @@ pipeline {
             }
         }
     }
-    //post {
-    //    cleanup{
-//  //          echo "Cleaning up."
-//  //          script {
+    post {
+        cleanup{
+            echo "Cleaning up."
+  //          script {
 //  //              if(fileExists('source/setup.py')){
 //  //                  dir("source"){
 //  //                      try{
@@ -551,6 +554,6 @@ pipeline {
 //  //                  [pattern: '.tox', type: 'INCLUDE'],
     //                [pattern: '*@tmp', type: 'INCLUDE']
     //                ]
-    //    }
-    //}
+        }
+    }
 }
