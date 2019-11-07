@@ -182,9 +182,9 @@ pipeline {
                             steps {
                                 unstash "docs"
                                 powershell "New-Item -ItemType Directory -Force -Path logs"
-                                bat "sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
-//                                bat "coverage run sphinx-build.exe -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
-//                                bat "coverage xml -o reports/doctest_coverage.xml"
+//                                bat "python -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                bat "coverage run -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                bat "coverage xml -o reports/doctest_coverage.xml"
                             }
                             post{
                                 always {
@@ -276,7 +276,7 @@ pipeline {
                             }
                         }
                         bat "coverage combine"
-                        bat "coverage xml -o -i reports/coverage.xml"
+                        bat "coverage xml -i -o reports/coverage.xml"
                         publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                     }
                     post{
