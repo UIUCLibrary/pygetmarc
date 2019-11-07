@@ -191,6 +191,9 @@ pipeline {
 //                                    archiveArtifacts artifacts: "logs/doctest.log"
 
                                 }
+                                cleanup{
+                                    cleanWs notFailBuild: true
+                                }
                             }
                         }
                         stage("Run MyPy Static Analysis") {
@@ -213,6 +216,9 @@ pipeline {
                                         )
                                     archiveArtifacts artifacts: "logs/mypy.log"
                                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                }
+                                cleanup{
+                                    cleanWs notFailBuild: true
                                 }
                             }
                         }
@@ -284,6 +290,9 @@ pipeline {
                         always{
                             archiveArtifacts artifacts: "reports/*.xml"
                         }
+                    }
+                    cleanup{
+                        cleanWs notFailBuild: true
                     }
                 }
             }
