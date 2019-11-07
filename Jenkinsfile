@@ -193,24 +193,16 @@ pipeline {
                         }
                         stage("Run MyPy Static Analysis") {
                             agent {
-                                docker {
-                                    image 'python:3.7'
-                                    label 'linux&&docker'
-                                  }
-                                  //dockerfile {
-                                  //      filename 'ci\\docker\\windows\\Dockerfile'
-                                  //      label 'windows&&docker'
-                                  //    }
+                                  dockerfile {
+                                        filename 'ci/docker/linux/Dockerfile'
+                                        label 'linux&&docker'
+                                      }
                             }
                             steps{
-                                //bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html)"
-                                //powershell "New-Item -ItemType Directory -Force -Path logs"
-
                                 sh "python -m venv venv && venv/bin/pip install mypy lxml"
                                 sh "mkdir -p logs"
                                 catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
                                     sh "venv/bin/mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log"
-                                    //bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
                             }
                             post {
