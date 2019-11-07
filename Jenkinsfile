@@ -516,16 +516,12 @@ pipeline {
                     }
                     post{
                         cleanup{
-                            cleanWs notFailBuild: true
+                            deleteDir()
+//                            cleanWs notFailBuild: true
                         }
                     }
                 }
 
-            }
-            post{
-                cleanup{
-                    cleanWs notFailBuild: true
-                }
             }
         }
     }
