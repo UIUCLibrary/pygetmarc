@@ -183,12 +183,12 @@ pipeline {
                                 unstash "docs"
                                 powershell "New-Item -ItemType Directory -Force -Path logs"
 //                                bat "python -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
-                                bat "coverage run -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
-                                bat "coverage xml -o reports/doctest_coverage.xml"
+                                bat "coverage run -p -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                             }
                             post{
                                 always {
-                                    archiveArtifacts artifacts: "logs/doctest.log"
+                                    stash includes: '.coverage.*', name: 'doctest_coverage'
+//                                    archiveArtifacts artifacts: "logs/doctest.log"
 
                                 }
                             }
@@ -268,6 +268,7 @@ pipeline {
                     }
                     steps{
                         unstash "unit_tests_coverage"
+                        unstash "doctest_coverage"
                         script{
                             try{
                                 unstash "integration_tests_coverage"
