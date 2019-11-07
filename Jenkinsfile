@@ -295,17 +295,18 @@ pipeline {
            options{
                 timestamps()
            }
-           agent {
-                dockerfile {
-                    filename 'ci\\docker\\windows\\Dockerfile'
-                    label 'windows&&docker'
-                }
-           }
+
             environment{
                 DEVPI = credentials("DS_devpi")
             }
             stages{
                 stage("Upload to DevPi Staging") {
+                    agent {
+                        dockerfile {
+                            filename 'ci\\docker\\windows\\Dockerfile'
+                            label 'windows&&docker'
+                        }
+                   }
                     steps {
                         bat "pip.exe install devpi-client"
                         devpiUpload(
