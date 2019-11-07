@@ -20,7 +20,7 @@ pipeline {
     agent none
     options {
         disableConcurrentBuilds()  //each branch has 1 job running at a time
-        timeout(20)  // Timeout after 20 minutes. This shouldn't take this long but it hangs for some reason
+
     }
     environment {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
@@ -48,7 +48,9 @@ pipeline {
                   }
             }
             steps{
-                bat "python setup.py dist_info"
+                timeout(3){
+                    bat "python setup.py dist_info"
+                }
             }
             post{
                 success{
@@ -67,6 +69,9 @@ pipeline {
                     filename 'ci\\docker\\windows\\Dockerfile'
                     label 'windows&&docker'
                   }
+            }
+            options{
+                timeout(3)
             }
             steps {
                 echo "Building docs on ${env.NODE_NAME}"
@@ -111,6 +116,9 @@ pipeline {
                                     label 'windows&&docker'
                                   }
                             }
+                            options{
+                                timeout(3)
+                            }
                             steps {
                                 script{
                                     try{
@@ -150,6 +158,9 @@ pipeline {
                                     label 'windows&&docker'
                                   }
                             }
+                            options{
+                                timeout(3)
+                            }
                             steps {
                                 unstash "docs"
                                 powershell "New-Item -ItemType Directory -Force -Path logs"
@@ -170,6 +181,9 @@ pipeline {
                                         filename 'ci/docker/linux/Dockerfile'
                                         label 'linux&&docker'
                                       }
+                            }
+                            options{
+                                timeout(3)
                             }
                             steps{
                                 sh "mkdir -p logs"
@@ -200,6 +214,9 @@ pipeline {
                             when {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
+                            options{
+                                timeout(3)
+                            }
                             steps {
                                 bat "coverage run -p --source=uiucprescon -m pytest -m integration"
                             }
@@ -216,6 +233,9 @@ pipeline {
                                         filename 'ci\\docker\\windows\\Dockerfile'
                                         label 'windows&&docker'
                                   }
+                            }
+                            options{
+                                timeout(3)
                             }
                             steps {
                                 bat "coverage run -p --source=uiucprescon -m pytest"
@@ -234,6 +254,9 @@ pipeline {
                                 filename 'ci\\docker\\windows\\Dockerfile'
                                 label 'windows&&docker'
                           }
+                    }
+                    options{
+                        timeout(3)
                     }
                     steps{
                         unstash "unit_tests_coverage"
@@ -267,6 +290,9 @@ pipeline {
                     filename 'ci\\docker\\windows\\Dockerfile'
                     label 'windows&&docker'
                   }
+            }
+            options{
+                timeout(3)
             }
             steps {
                 bat "python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
