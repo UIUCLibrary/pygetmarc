@@ -186,17 +186,14 @@ pipeline {
                         stage("Run MyPy Static Analysis") {
                             steps{
                                 bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html) && (if not exist logs mkdir logs)"
-                                script{
-                                    try{
-                                        bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
-                                    } catch (exc) {
-                                        echo "MyPy found some warnings"
-                                    }
+                                catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
+                                    bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
                                 }
                             }
                             post {
                                 always {
                                     recordIssues(tools: [myPy(pattern: 'logs/mypy.log')])
+                                    archiveArtifacts artifacts: "logs/mypy.log"
                                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                                 }
                             }
