@@ -65,8 +65,8 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            parallel {
+        //tage('Build') {
+        //   parallel {
 
                 //stage("Python Package"){
                 //    agent {
@@ -92,37 +92,35 @@ pipeline {
                 //        }
                 //    }
                 //}
-                stage("Sphinx Documentation"){
-                    agent {
-                      dockerfile {
-                            filename 'ci\\docker\\windows\\Dockerfile'
-                            label 'windows&&docker'
-                          }
+        stage("Sphinx Documentation"){
+            agent {
+              dockerfile {
+                    filename 'ci\\docker\\windows\\Dockerfile'
+                    label 'windows&&docker'
+                  }
+            }
+            steps {
+                echo "Building docs on ${env.NODE_NAME}"
+                bat "if not exist logs mkdir logs"
+                bat "sphinx-build.exe -b html ${WORKSPACE}\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
+            }
+            post{
+                always {
+                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
+                    archiveArtifacts artifacts: 'logs/build_sphinx.log'
+                }
+                success{
+                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                    unstash "DIST-INFO"
+                    script{
+                        def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
+                        def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+                        zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                     }
-                    steps {
-                        echo "Building docs on ${env.NODE_NAME}"
-                        bat "if not exist logs mkdir logs"
-                        bat "sphinx-build.exe -b html ${WORKSPACE}\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
-                    }
-                    post{
-                        always {
-                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Documentation Build', pattern: 'logs/build_sphinx.log')])
-                            archiveArtifacts artifacts: 'logs/build_sphinx.log'
-                        }
-                        success{
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                            unstash "DIST-INFO"
-                            script{
-                                def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
-                                def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                                zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                            }
-                            stash includes: 'build/docs/html/**', name: 'docs'
-                        }
-                        failure{
-                            echo "Failed to build Python package"
-                        }
-                    }
+                    stash includes: 'build/docs/html/**', name: 'docs'
+                }
+                failure{
+                    echo "Failed to build Python package"
                 }
             }
         }
