@@ -265,6 +265,11 @@ pipeline {
                         }
                         publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
                     }
+                    post{
+                        always{
+                            archiveArtifacts artifacts: "reports/*.xml"
+                        }
+                    }
                 }
             }
 
