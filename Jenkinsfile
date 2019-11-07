@@ -517,32 +517,32 @@ pipeline {
             }
         }
     }
-    post {
-        cleanup{
-//            echo "Cleaning up."
-//            script {
-//                if(fileExists('source/setup.py')){
-//                    dir("source"){
-//                        try{
-//                            bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
-//                        } catch (Exception ex) {
-//                            echo "Unable to succesfully run clean. Purging source directory."
-//                            deleteDir()
-//                        }
-//                    }
-//                }
-//
-//            }
-            cleanWs deleteDirs: true, patterns: [
-                    [pattern: 'source', type: 'INCLUDE'],
-                    [pattern: 'build*', type: 'INCLUDE'],
-                    [pattern: 'certs', type: 'INCLUDE'],
-                    [pattern: 'dist*', type: 'INCLUDE'],
-                    [pattern: 'logs*', type: 'INCLUDE'],
-                    [pattern: 'reports*', type: 'INCLUDE'],
-//                    [pattern: '.tox', type: 'INCLUDE'],
-                    [pattern: '*@tmp', type: 'INCLUDE']
-                    ]
-        }
-    }
+    //post {
+    //    cleanup{
+//  //          echo "Cleaning up."
+//  //          script {
+//  //              if(fileExists('source/setup.py')){
+//  //                  dir("source"){
+//  //                      try{
+//  //                          bat "${WORKSPACE}\\venv\\Scripts\\python.exe setup.py clean --all"
+//  //                      } catch (Exception ex) {
+//  //                          echo "Unable to succesfully run clean. Purging source directory."
+//  //                          deleteDir()
+//  //                      }
+//  //                  }
+//  //              }
+////
+//  //          }
+    //        cleanWs deleteDirs: true, patterns: [
+    //                [pattern: 'source', type: 'INCLUDE'],
+    //                [pattern: 'build*', type: 'INCLUDE'],
+    //                [pattern: 'certs', type: 'INCLUDE'],
+    //                [pattern: 'dist*', type: 'INCLUDE'],
+    //                [pattern: 'logs*', type: 'INCLUDE'],
+    //                [pattern: 'reports*', type: 'INCLUDE'],
+//  //                  [pattern: '.tox', type: 'INCLUDE'],
+    //                [pattern: '*@tmp', type: 'INCLUDE']
+    //                ]
+    //    }
+    //}
 }
