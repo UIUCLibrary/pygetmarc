@@ -68,31 +68,30 @@ pipeline {
         stage('Build') {
             parallel {
 
-                stage("Python Package"){
-                    agent {
-                      dockerfile {
-                            filename 'ci\\docker\\windows\\Dockerfile'
-                            label 'windows&&docker'
-                          }
-                    }
-                    steps {
-                        
-                        bat "if not exist logs mkdir logs"
-                        powershell "& python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
-
-                    }
-                    post{
-                        always{
-                            archiveArtifacts artifacts: "logs/build.log"
-                        }
-                        failure{
-                            echo "Failed to build Python package"
-                        }
-                        success{
-                            echo "Successfully built project is ./build."
-                        }
-                    }
-                }
+                //stage("Python Package"){
+                //    agent {
+                //      dockerfile {
+                //            filename 'ci\\docker\\windows\\Dockerfile'
+                //            label 'windows&&docker'
+                //          }
+                //    }
+                //    steps {
+                //
+                //        bat "if not exist logs mkdir logs"
+                //        powershell "& python.exe setup.py build -b ${WORKSPACE}\\build  | tee ${WORKSPACE}\\logs\\build.log"
+                //    }
+                //    post{
+                //        always{
+                //            archiveArtifacts artifacts: "logs/build.log"
+                //        }
+                //        failure{
+                //            echo "Failed to build Python package"
+                //        }
+                //        success{
+                //            echo "Successfully built project is ./build."
+                //        }
+                //    }
+                //}
                 stage("Sphinx Documentation"){
                     agent {
                       dockerfile {
