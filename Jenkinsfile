@@ -225,17 +225,13 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
                             steps {
-                                bat "pytest.exe -m integration --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon"
+                                bat "pytest.exe -m integration --cov-report xml:${WORKSPACE}/reports/integration_tests_coverage.xml --cov=uiucprescon"
                             }
                             post {
-                                always{
-                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-integration', reportTitles: ''])
-                                    junit "reports/junit-${env.NODE_NAME}-pytest.xml"
-                                }
                                 success{
                                     publishCoverage(
                                         adapters: [
-                                            coberturaAdapter('reports/coverage.xml')
+                                            coberturaAdapter('reports/integration_tests_coverage.xml')
                                             ],
                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                         tag: 'coverage'
@@ -252,17 +248,13 @@ pipeline {
                                   }
                             }
                             steps {
-                                bat "pytest.exe --junitxml=${WORKSPACE}/reports/junit-${env.NODE_NAME}-pytest.xml --junit-prefix=${env.NODE_NAME}-pytest --cov-report html:${WORKSPACE}/reports/coverage/  --cov-report xml:${WORKSPACE}/reports/coverage.xml --cov=uiucprescon"
+                                bat "pytest.exe --cov-report xml:${WORKSPACE}/reports/unit_tests_coverage.xml --cov=uiucprescon"
                             }
                             post {
-                                always{
-                                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/coverage', reportFiles: 'index.html', reportName: 'Coverage-Unit tests', reportTitles: ''])
-                                        junit "reports/junit-${env.NODE_NAME}-pytest.xml"
-                                }
                                 success{
                                     publishCoverage(
                                         adapters: [
-                                            coberturaAdapter('reports/coverage.xml')
+                                            coberturaAdapter('reports/unit_tests_coverage.xml')
                                             ],
                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD'),
                                         tag: 'coverage'
