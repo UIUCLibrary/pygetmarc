@@ -227,7 +227,6 @@ pipeline {
                             steps {
                                 bat "coverage run --source=uiucprescon -m pytest -m integration"
                                 bat "coverage xml -o reports/integration_tests_coverage.xml"
-//                                bat "pytest.exe -m integration --cov-report xml:${WORKSPACE}/reports/integration_tests_coverage.xml --cov=uiucprescon"
                             }
                             post {
                                 success{
@@ -244,7 +243,9 @@ pipeline {
                                   }
                             }
                             steps {
-                                bat "pytest.exe --cov-report xml:${WORKSPACE}/reports/unit_tests_coverage.xml --cov=uiucprescon"
+//                                bat "pytest.exe --cov-report xml:${WORKSPACE}/reports/unit_tests_coverage.xml --cov=uiucprescon"
+                                bat "coverage run --source=uiucprescon -m pytest"
+                                bat "coverage xml -o reports/unit_tests_coverage.xml"
                             }
                             post {
                                 success{
