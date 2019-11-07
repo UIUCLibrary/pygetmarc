@@ -300,7 +300,7 @@ pipeline {
                 timestamps()
            }
            agent {
-                label "windows && python3"
+                label "windows && Python3"
            }
 
             environment{
