@@ -224,6 +224,9 @@ pipeline {
                                 success{
                                     stash includes: '.coverage.*', name: 'integration_tests_coverage'
                                 }
+                                cleanup{
+                                    cleanWs notFailBuild: true
+                                }
 
                             }
                         }
@@ -243,6 +246,9 @@ pipeline {
                             post {
                                 success{
                                     stash includes: '.coverage.*', name: 'unit_tests_coverage'
+                                }
+                                cleanup{
+                                    cleanWs notFailBuild: true
                                 }
                             }
                         }
