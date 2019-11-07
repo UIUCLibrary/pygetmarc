@@ -36,7 +36,6 @@ pipeline {
         string(name: "PROJECT_NAME", defaultValue: "pyGetMarc", description: "Name given to the project")
         booleanParam(name: "TEST_RUN_INTEGRATION", defaultValue: true, description: "Run integration tests")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
-        booleanParam(name: "PACKAGE", defaultValue: true, description: "Create a package")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpy.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DOCS", defaultValue: false, description: "Update online documentation")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to https://devpi.library.illinois.edu/production/release")
