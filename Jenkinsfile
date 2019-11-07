@@ -205,7 +205,7 @@ pipeline {
                             steps{
                                 //bat "(if not exist reports\\mypy\\html mkdir reports\\mypy\\html)"
                                 //powershell "New-Item -ItemType Directory -Force -Path logs"
-                                sh "pip install mypy"
+                                sh "pip install mypy --user"
                                 catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
                                     sh "mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log"
                                     //bat "mypy.exe -p uiucprescon --html-report ${WORKSPACE}\\reports\\mypy\\html > ${WORKSPACE}\\logs\\mypy.log"
