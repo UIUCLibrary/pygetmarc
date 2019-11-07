@@ -60,6 +60,9 @@ pipeline {
                             stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
                             archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
                         }
+                        cleanup{
+                            cleanWs notFailBuild: true
+                        }
                     }
                 }
             }
