@@ -299,21 +299,28 @@ pipeline {
            options{
                 timestamps()
            }
-           agent none
+           agent {
+                label "windows && python3"
+           }
 
             environment{
                 DEVPI = credentials("DS_devpi")
             }
             stages{
+                stage("Installing DevPi Client"){
+                    environment{
+                        PATH = "${tool 'CPython-3.7'};$PATH"
+                    }
+                    steps{
+                        bat "python -m venv venv"
+                        bat "venv\\Scripts\\pip.exe install devpi-client"
+                    }
+                }
                 stage("Upload to DevPi Staging") {
-                    agent {
-                        dockerfile {
-                            filename 'ci\\docker\\windows\\Dockerfile'
-                            label 'windows&&docker'
-                        }
-                   }
+                    environment{
+                        PATH = "${WORKSPACE}\\venv\\Scripts;$PATH"
+                    }
                     steps {
-                        bat "pip.exe install devpi-client"
                         unstash "dist"
                         devpiUpload(
                             devpiExecutable: "${powershell(script: '(Get-Command devpi).path', returnStdout: true).trim()}",
@@ -446,7 +453,14 @@ pipeline {
                             branch "master"
                         }
                     }
+                    agent {
+                        dockerfile {
+                            filename 'ci\\docker\\windows\\Dockerfile'
+                            label 'windows&&docker'
+                        }
+                   }
                     steps {
+                        bat "pip.exe install devpi-client"
                         unstash "DIST-INFO"
                         script {
                             def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
