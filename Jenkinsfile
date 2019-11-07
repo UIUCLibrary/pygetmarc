@@ -202,7 +202,7 @@ pipeline {
 //                                sh "python -m venv venv && venv/bin/pip install mypy lxml"
                                 sh "mkdir -p logs"
                                 catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
-                                    sh "mypy -p uiucprescon --html-report reports/mypy/html > logs/mypy.log"
+                                    sh "mypy -p uiucprescon --html-report reports/mypy/html | tee logs/mypy.log"
                                 }
                             }
                             post {
