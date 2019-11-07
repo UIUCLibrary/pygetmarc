@@ -268,10 +268,10 @@ pipeline {
                         tag: 'coverage'
                     )
                 }
-                cleanup{
-                    bat "del reports\\coverage.xml"
-                    cleanWs notFailBuild: true
-                }
+//                cleanup{
+//                    bat "del reports\\coverage.xml"
+//                    cleanWs notFailBuild: true
+//                }
             }
         }
     
