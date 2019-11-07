@@ -225,7 +225,9 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
                             steps {
-                                bat "pytest.exe -m integration --cov-report xml:${WORKSPACE}/reports/integration_tests_coverage.xml --cov=uiucprescon"
+                                bat "coverage run --source=uiucprescon -m pytest -m integration"
+                                bat "coverage xml -o reports/integration_tests_coverage.xml"
+//                                bat "pytest.exe -m integration --cov-report xml:${WORKSPACE}/reports/integration_tests_coverage.xml --cov=uiucprescon"
                             }
                             post {
                                 success{
