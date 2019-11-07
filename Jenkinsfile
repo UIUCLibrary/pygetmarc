@@ -243,7 +243,6 @@ pipeline {
                                   }
                             }
                             steps {
-//                                bat "pytest.exe --cov-report xml:${WORKSPACE}/reports/unit_tests_coverage.xml --cov=uiucprescon"
                                 bat "coverage run --source=uiucprescon -m pytest"
                                 bat "coverage xml -o reports/unit_tests_coverage.xml"
                             }
@@ -266,7 +265,7 @@ pipeline {
                                 echo "no integration test coverage file found"
                             }
                         }
-                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                     }
                     post{
                         always{
