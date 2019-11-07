@@ -475,6 +475,7 @@ pipeline {
                         def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
                         remove_from_devpi("venv\\36\\Scripts\\devpi.exe", "${props.Name}", "${props.Version}", "/${env.DEVPI_USR}/${env.BRANCH_NAME}_staging", "${env.DEVPI_USR}", "${env.DEVPI_PSW}")
                     }
+                    cleanWs notFailBuild: true
                 }
             }
         }
@@ -511,6 +512,11 @@ pipeline {
                                     )
                                 ]
                             )
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs notFailBuild: true
                         }
                     }
                 }
