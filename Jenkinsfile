@@ -216,11 +216,12 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
                             options{
-                                timeout(3)
                                 retry(2)
                             }
                             steps {
-                                bat "coverage run -p --source=uiucprescon -m pytest -m integration"
+                                timeout(3){
+                                    bat "coverage run -p --source=uiucprescon -m pytest -m integration"
+                                }
                             }
                             post {
                                 success{
