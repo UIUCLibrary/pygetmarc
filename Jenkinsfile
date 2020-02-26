@@ -159,13 +159,14 @@ pipeline {
                                   }
                             }
                             options{
-                                timeout(3)
                                 retry(2)
                             }
                             steps {
-                                unstash "docs"
-                                powershell "New-Item -ItemType Directory -Force -Path logs"
-                                bat "coverage run -p -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                timeout(3){
+                                    unstash "docs"
+                                    powershell "New-Item -ItemType Directory -Force -Path logs"
+                                    bat "coverage run -p -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+                                }
                             }
                             post{
                                 always {
@@ -240,11 +241,10 @@ pipeline {
                                         label 'windows&&docker'
                                   }
                             }
-                            options{
-                                timeout(3)
-                            }
                             steps {
-                                bat "coverage run -p --source=uiucprescon -m pytest"
+                                timeout(3){
+                                    bat "coverage run -p --source=uiucprescon -m pytest"
+                                }
                             }
                             post {
                                 success{
