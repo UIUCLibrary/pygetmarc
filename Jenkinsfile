@@ -160,6 +160,7 @@ pipeline {
                             }
                             options{
                                 timeout(3)
+                                retry(2)
                             }
                             steps {
                                 unstash "docs"
@@ -216,6 +217,7 @@ pipeline {
                             }
                             options{
                                 timeout(3)
+                                retry(2)
                             }
                             steps {
                                 bat "coverage run -p --source=uiucprescon -m pytest -m integration"
