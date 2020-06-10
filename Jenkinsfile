@@ -105,29 +105,15 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_TOX
                             }
                             agent {
-                              dockerfile {
-                                    filename 'ci\\docker\\windows\\Dockerfile'
-                                    label 'windows&&docker'
-                                  }
-                            }
-                            options{
-                                timeout(3)
+                                dockerfile {
+                                    filename 'ci/docker/linux/Dockerfile'
+                                    label 'linux && docker'
+                                }
                             }
                             steps {
-                                script{
-                                    try{
-                                        bat (
-                                            label: "Run Tox",
-                                            script: "tox --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v  -e py"
-                                        )
-                                    } catch (exc) {
-                                        bat (
-                                            label: "Run Tox with new environments",
-                                            script: "tox --recreate --parallel=auto --parallel-live --workdir ${WORKSPACE}\\.tox -v -e py"
-                                        )
-                                    }
+                                timeout(3){
+                                    sh "tox -e py"
                                 }
-
                             }
                             post {
                                 always {
@@ -181,16 +167,15 @@ pipeline {
                                         label 'linux&&docker'
                                       }
                             }
-                            options{
-                                timeout(3)
-                            }
                             steps{
-                                catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
-                                    sh(label: "Running MyPy",
-                                       script: """mkdir -p logs
-                                                  mypy -p uiucprescon --html-report reports/mypy/html | tee logs/mypy.log
-                                                  """
-                                    )
+                                timeout(3){
+                                    catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
+                                        sh(label: "Running MyPy",
+                                           script: """mkdir -p logs
+                                                      mypy -p uiucprescon --html-report reports/mypy/html | tee logs/mypy.log
+                                                      """
+                                        )
+                                    }
                                 }
                             }
                             post {
