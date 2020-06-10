@@ -288,8 +288,6 @@ pipeline {
                             post {
                                 always{
                                     junit "reports/pytest.xml"
-                                }
-                                success{
                                     stash includes: '.coverage.*', name: 'unit_tests_coverage'
                                 }
                                 cleanup{
