@@ -126,8 +126,9 @@ pipeline {
                         def props = readProperties interpolate: true, file: 'uiucprescon_getmarc.dist-info/METADATA'
                         def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
                         zip archive: true, dir: "build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                        stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
                     }
-                    stash includes: 'build/docs/html/**', name: 'docs'
+
                 }
                 failure{
                     echo "Failed to build Python package"
@@ -185,7 +186,7 @@ pipeline {
                             }
                             steps {
                                 timeout(3){
-                                    unstash "docs"
+                                    unstash "DOCS_ARCHIVE"
                                     sh(label: "Running Run Doctest",
                                         script: """mkdir -p logs
                                                coverage run -p -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -w logs/doctest.log
@@ -616,8 +617,7 @@ pipeline {
                     }
                     steps {
                         unstash 'DOCS_ARCHIVE'
-                        unstash 'sdist'
-                        unstash 'whl'
+                        unstash 'dist'
                         sh(
                                 label: "Connecting to DevPi Server",
                                 script: 'devpi use https://devpi.library.illinois.edu --clientdir ${WORKSPACE}/devpi && devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ${WORKSPACE}/devpi'
@@ -795,7 +795,7 @@ devpi upload --from-dir dist --clientdir ${WORKSPACE}/devpi"""
                         skipDefaultCheckout(true)
                     }
                     steps{
-                        unstash "docs"
+                        unstash "DOCS_ARCHIVE"
                         dir("build/docs/html/"){
                             input 'Update project documentation?'
                             sshPublisher(
