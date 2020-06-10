@@ -278,11 +278,17 @@ pipeline {
                             }
                             steps {
                                 timeout(3){
-                                    sh "coverage run -p --source=uiucprescon -m pytest"
-//                                     bat "coverage run -p --source=uiucprescon -m pytest"
+                                    catchError(buildResult: "UNSTABLE", message: 'pytest found issues', stageResult: "UNSTABLE") {
+                                        sh "coverage run -p --source=uiucprescon -m pytest --junitxml=reports/pytest.xml"
+                                    }
+    //                                     bat "coverage run -p --source=uiucprescon -m pytest"
+
                                 }
                             }
                             post {
+                                always{
+                                    junit "reports/pytest.xml"
+                                }
                                 success{
                                     stash includes: '.coverage.*', name: 'unit_tests_coverage'
                                 }
