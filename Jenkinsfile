@@ -60,43 +60,30 @@ pipeline {
                     }
                 }
             }
-//         stage("Getting Distribution Info"){
+        stage("Sphinx Documentation"){
 //             agent {
 //               dockerfile {
 //                     filename 'ci\\docker\\windows\\Dockerfile'
 //                     label 'windows&&docker'
 //                   }
 //             }
-//             steps{
-//                 timeout(3){
-//                     bat "python setup.py dist_info"
-//                 }
-//             }
-//             post{
-//                 success{
-//                     stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
-//                     archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
-//                 }
-//                 cleanup{
-//                     cleanWs notFailBuild: true
-//                 }
-//             }
-//         }
-
-        stage("Sphinx Documentation"){
             agent {
-              dockerfile {
-                    filename 'ci\\docker\\windows\\Dockerfile'
-                    label 'windows&&docker'
-                  }
-            }
-            options{
-                timeout(3)
+                dockerfile {
+                    filename 'ci/docker/linux/Dockerfile'
+                    label 'linux && docker'
+                }
             }
             steps {
-                echo "Building docs on ${env.NODE_NAME}"
-                bat "if not exist logs mkdir logs"
-                bat "sphinx-build.exe -b html ${WORKSPACE}\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
+                timeout(3){
+                    sh(label:"Building docs on ${env.NODE_NAME}",
+                       script: """mkdir -p logs
+                       python -m sphinx -b html docs/source build/docs/html -dbuild/docs/doctrees -w logs/build_sphinx.log
+                       """
+                       )
+                }
+//                 echo "Building docs on ${env.NODE_NAME}"
+//                 bat "if not exist logs mkdir logs"
+//                 bat "sphinx-build.exe -b html ${WORKSPACE}\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
             }
             post{
                 always {
