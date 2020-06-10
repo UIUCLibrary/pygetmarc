@@ -41,27 +41,47 @@ pipeline {
     }
     stages {
         stage("Getting Distribution Info"){
-            agent {
-              dockerfile {
-                    filename 'ci\\docker\\windows\\Dockerfile'
-                    label 'windows&&docker'
-                  }
-            }
-            steps{
-                timeout(3){
-                    bat "python setup.py dist_info"
+               agent {
+                    dockerfile {
+                        filename 'ci/docker/linux/Dockerfile'
+                        label 'linux && docker'
+                    }
+                }
+                steps{
+                    sh(
+                        label: "Creating dist_info",
+                        script: "python setup.py dist_info"
+                        )
+                }
+                post{
+                    success{
+                        stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
+                        archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
+                    }
                 }
             }
-            post{
-                success{
-                    stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
-                    archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
-                }
-                cleanup{
-                    cleanWs notFailBuild: true
-                }
-            }
-        }
+//         stage("Getting Distribution Info"){
+//             agent {
+//               dockerfile {
+//                     filename 'ci\\docker\\windows\\Dockerfile'
+//                     label 'windows&&docker'
+//                   }
+//             }
+//             steps{
+//                 timeout(3){
+//                     bat "python setup.py dist_info"
+//                 }
+//             }
+//             post{
+//                 success{
+//                     stash includes: "uiucprescon_getmarc.dist-info/**", name: 'DIST-INFO'
+//                     archiveArtifacts artifacts: "uiucprescon_getmarc.dist-info/**"
+//                 }
+//                 cleanup{
+//                     cleanWs notFailBuild: true
+//                 }
+//             }
+//         }
 
         stage("Sphinx Documentation"){
             agent {
