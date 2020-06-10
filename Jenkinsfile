@@ -360,6 +360,8 @@ pipeline {
             post{
                 success{
                     archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
+                }
+                always{
                     stash includes: 'dist/*.*', name: "dist"
                 }
                 cleanup{
