@@ -225,43 +225,43 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Run Integration Tests") {
-                            agent {
-                                  dockerfile {
-                                        filename 'ci/docker/linux/Dockerfile'
-                                        label 'linux&&docker'
-                                      }
-                            }
+//                         stage("Run Integration Tests") {
 //                             agent {
 //                                   dockerfile {
-//                                         filename 'ci\\docker\\windows\\Dockerfile'
-//                                         label 'windows&&docker'
-//                                   }
+//                                         filename 'ci/docker/linux/Dockerfile'
+//                                         label 'linux&&docker'
+//                                       }
 //                             }
-                            when {
-                                equals expected: true, actual: params.TEST_RUN_INTEGRATION
-                            }
-                            options{
-                                retry(2)
-                            }
-                            steps {
-                                timeout(3){
-                                    sh(label: "Running pytest with integration",
-                                       script: """coverage run -p --source=uiucprescon -m pytest -m integration"""
-                                   )
-//                                     bat "coverage run -p --source=uiucprescon -m pytest -m integration"
-                                }
-                            }
-                            post {
-                                success{
-                                    stash includes: '.coverage.*', name: 'integration_tests_coverage'
-                                }
-                                cleanup{
-                                    cleanWs notFailBuild: true
-                                }
-
-                            }
-                        }
+// //                             agent {
+// //                                   dockerfile {
+// //                                         filename 'ci\\docker\\windows\\Dockerfile'
+// //                                         label 'windows&&docker'
+// //                                   }
+// //                             }
+//                             when {
+//                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
+//                             }
+//                             options{
+//                                 retry(2)
+//                             }
+//                             steps {
+//                                 timeout(3){
+//                                     sh(label: "Running pytest with integration",
+//                                        script: """coverage run -p --source=uiucprescon -m pytest -m integration"""
+//                                    )
+// //                                     bat "coverage run -p --source=uiucprescon -m pytest -m integration"
+//                                 }
+//                             }
+//                             post {
+//                                 success{
+//                                     stash includes: '.coverage.*', name: 'integration_tests_coverage'
+//                                 }
+//                                 cleanup{
+//                                     cleanWs notFailBuild: true
+//                                 }
+//
+//                             }
+//                         }
                         stage("Run Unit Tests") {
 //                             agent {
 
@@ -310,13 +310,13 @@ pipeline {
                         timeout(3){
                             unstash "unit_tests_coverage"
                             unstash "doctest_coverage"
-                            script{
-                                try{
-                                    unstash "integration_tests_coverage"
-                                } catch (Exception ex) {
-                                    echo "no integration test coverage file found"
-                                }
-                            }
+//                             script{
+//                                 try{
+//                                     unstash "integration_tests_coverage"
+//                                 } catch (Exception ex) {
+//                                     echo "no integration test coverage file found"
+//                                 }
+//                             }
                             sh(label:"combining coverage",
                                script: """coverage combine
                                           coverage xml -i -o reports/coverage.xml
