@@ -61,12 +61,6 @@ pipeline {
                 }
             }
         stage("Sphinx Documentation"){
-//             agent {
-//               dockerfile {
-//                     filename 'ci\\docker\\windows\\Dockerfile'
-//                     label 'windows&&docker'
-//                   }
-//             }
             agent {
                 dockerfile {
                     filename 'ci/docker/linux/Dockerfile'
@@ -81,9 +75,6 @@ pipeline {
                        """
                        )
                 }
-//                 echo "Building docs on ${env.NODE_NAME}"
-//                 bat "if not exist logs mkdir logs"
-//                 bat "sphinx-build.exe -b html ${WORKSPACE}\\docs\\source ${WORKSPACE}\\build\\docs\\html -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\build_sphinx.log"
             }
             post{
                 always {
@@ -164,10 +155,6 @@ pipeline {
                                     filename 'ci/docker/linux/Dockerfile'
                                     label 'linux && docker'
                                 }
-//                               dockerfile {
-//                                     filename 'ci\\docker\\windows\\Dockerfile'
-//                                     label 'windows&&docker'
-//                                   }
                             }
                             options{
                                 retry(2)
@@ -175,13 +162,11 @@ pipeline {
                             steps {
                                 timeout(3){
                                     unstash "docs"
-//                                     powershell "New-Item -ItemType Directory -Force -Path logs"
                                     sh(label: "Running Run Doctest",
                                         script: """mkdir -p logs
                                                coverage run -p -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -w logs/doctest.log
                                                """
                                                )
-//                                     bat "coverage run -p -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                                 }
                             }
                             post{
@@ -298,12 +283,6 @@ pipeline {
                     }
                 }
                 stage("Submit Coverage Report"){
-//                     agent {
-//                           dockerfile {
-//                                 filename 'ci\\docker\\windows\\Dockerfile'
-//                                 label 'windows&&docker'
-//                           }
-//                     }
                     agent {
                           dockerfile {
                                 filename 'ci/docker/linux/Dockerfile'
@@ -314,13 +293,6 @@ pipeline {
                         timeout(3){
                             unstash "unit_tests_coverage"
                             unstash "doctest_coverage"
-//                             script{
-//                                 try{
-//                                     unstash "integration_tests_coverage"
-//                                 } catch (Exception ex) {
-//                                     echo "no integration test coverage file found"
-//                                 }
-//                             }
                             sh(label:"combining coverage",
                                script: """coverage combine
                                           coverage xml -i -o reports/coverage.xml
