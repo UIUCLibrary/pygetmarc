@@ -18,10 +18,6 @@ def remove_from_devpi(devpiExecutable, pkgName, pkgVersion, devpiIndex, devpiUse
 
 pipeline {
     agent none
-    options {
-        disableConcurrentBuilds()  //each branch has 1 job running at a time
-
-    }
     environment {
         build_number = VersionNumber(projectStartDate: '2018-3-27', versionNumberString: '${BUILD_DATE_FORMATTED, "yy"}${BUILD_MONTH, XX}${BUILDS_THIS_MONTH, XX}', versionPrefix: '', worstResultForIncrement: 'SUCCESS')
     }
@@ -354,7 +350,7 @@ pipeline {
            }
            options{
                 timestamps()
-                skipDefaultCheckout(true)
+                lock("pygetmarc-devpi")
            }
            agent {
                 label "windows && Python3"
