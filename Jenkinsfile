@@ -160,10 +160,14 @@ pipeline {
                         }
                         stage("Run Doctest Tests"){
                             agent {
-                              dockerfile {
-                                    filename 'ci\\docker\\windows\\Dockerfile'
-                                    label 'windows&&docker'
-                                  }
+                                dockerfile {
+                                    filename 'ci/docker/linux/Dockerfile'
+                                    label 'linux && docker'
+                                }
+//                               dockerfile {
+//                                     filename 'ci\\docker\\windows\\Dockerfile'
+//                                     label 'windows&&docker'
+//                                   }
                             }
                             options{
                                 retry(2)
@@ -171,8 +175,13 @@ pipeline {
                             steps {
                                 timeout(3){
                                     unstash "docs"
-                                    powershell "New-Item -ItemType Directory -Force -Path logs"
-                                    bat "coverage run -p -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
+//                                     powershell "New-Item -ItemType Directory -Force -Path logs"
+                                    sh(label: "Running Run Doctest",
+                                        script: """mkdir -p logs
+                                               coverage run -p -m sphinx -b doctest docs/source build/docs -d build/docs/doctrees -w logs/doctest.log
+                                               """
+                                               )
+//                                     bat "coverage run -p -m sphinx -b doctest docs\\source ${WORKSPACE}\\build\\docs -d ${WORKSPACE}\\build\\docs\\doctrees -w ${WORKSPACE}\\logs\\doctest.log"
                                 }
                             }
                             post{
@@ -195,9 +204,12 @@ pipeline {
                                 timeout(3)
                             }
                             steps{
-                                sh "mkdir -p logs"
                                 catchError(buildResult: "SUCCESS", message: 'MyPy found issues', stageResult: "UNSTABLE") {
-                                    sh "mypy -p uiucprescon --html-report reports/mypy/html | tee logs/mypy.log"
+                                    sh(label: "Running MyPy",
+                                       script: """mkdir -p logs
+                                                  mypy -p uiucprescon --html-report reports/mypy/html | tee logs/mypy.log
+                                                  """
+                                    )
                                 }
                             }
                             post {
@@ -216,10 +228,16 @@ pipeline {
                         stage("Run Integration Tests") {
                             agent {
                                   dockerfile {
-                                        filename 'ci\\docker\\windows\\Dockerfile'
-                                        label 'windows&&docker'
-                                  }
+                                        filename 'ci/docker/linux/Dockerfile'
+                                        label 'linux&&docker'
+                                      }
                             }
+//                             agent {
+//                                   dockerfile {
+//                                         filename 'ci\\docker\\windows\\Dockerfile'
+//                                         label 'windows&&docker'
+//                                   }
+//                             }
                             when {
                                 equals expected: true, actual: params.TEST_RUN_INTEGRATION
                             }
@@ -228,7 +246,10 @@ pipeline {
                             }
                             steps {
                                 timeout(3){
-                                    bat "coverage run -p --source=uiucprescon -m pytest -m integration"
+                                    sh(label: "Running pytest with integration",
+                                       script: """coverage run -p --source=uiucprescon -m pytest -m integration"""
+                                   )
+//                                     bat "coverage run -p --source=uiucprescon -m pytest -m integration"
                                 }
                             }
                             post {
@@ -242,15 +263,23 @@ pipeline {
                             }
                         }
                         stage("Run Unit Tests") {
+//                             agent {
+
+//                                   dockerfile {
+//                                         filename 'ci\\docker\\windows\\Dockerfile'
+//                                         label 'windows&&docker'
+//                                   }
+//                             }
                             agent {
                                   dockerfile {
-                                        filename 'ci\\docker\\windows\\Dockerfile'
-                                        label 'windows&&docker'
-                                  }
+                                        filename 'ci/docker/linux/Dockerfile'
+                                        label 'linux&&docker'
+                                      }
                             }
                             steps {
                                 timeout(3){
-                                    bat "coverage run -p --source=uiucprescon -m pytest"
+                                    sh "coverage run -p --source=uiucprescon -m pytest"
+//                                     bat "coverage run -p --source=uiucprescon -m pytest"
                                 }
                             }
                             post {
@@ -265,28 +294,36 @@ pipeline {
                     }
                 }
                 stage("Submit Coverage Report"){
+//                     agent {
+//                           dockerfile {
+//                                 filename 'ci\\docker\\windows\\Dockerfile'
+//                                 label 'windows&&docker'
+//                           }
+//                     }
                     agent {
                           dockerfile {
-                                filename 'ci\\docker\\windows\\Dockerfile'
-                                label 'windows&&docker'
-                          }
-                    }
-                    options{
-                        timeout(3)
+                                filename 'ci/docker/linux/Dockerfile'
+                                label 'linux&&docker'
+                              }
                     }
                     steps{
-                        unstash "unit_tests_coverage"
-                        unstash "doctest_coverage"
-                        script{
-                            try{
-                                unstash "integration_tests_coverage"
-                            } catch (Exception ex) {
-                                echo "no integration test coverage file found"
+                        timeout(3){
+                            unstash "unit_tests_coverage"
+                            unstash "doctest_coverage"
+                            script{
+                                try{
+                                    unstash "integration_tests_coverage"
+                                } catch (Exception ex) {
+                                    echo "no integration test coverage file found"
+                                }
                             }
+                            sh(label:"combining coverage",
+                               script: """coverage combine
+                                          coverage xml -i -o reports/coverage.xml
+                                          """
+                            )
+                            publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                         }
-                        bat "coverage combine"
-                        bat "coverage xml -i -o reports/coverage.xml"
-                        publishCoverage adapters: [coberturaAdapter(mergeToOneReport: true, path: 'reports/*.xml')], sourceFileResolver: sourceFiles('STORE_ALL_BUILD'), tag: "coverage"
                     }
                     post{
                         always{
