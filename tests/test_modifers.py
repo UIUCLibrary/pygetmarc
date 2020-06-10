@@ -546,7 +546,7 @@ def test_reflow():
     <subfield code="u">https://hdl.handle.net/2027/uiuc.2693684</subfield>
       
   </datafield>
-  <datafield ind1=" " ind2=" " tag="955">
+  <datafield tag="955" ind1=" " ind2=" ">
     <subfield code="b">2693684</subfield>
   </datafield>
 </record>
