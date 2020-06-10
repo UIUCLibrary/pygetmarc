@@ -337,17 +337,23 @@ pipeline {
         }
     
         stage("Packaging") {
+//             agent {
+//               dockerfile {
+//                     filename 'ci\\docker\\windows\\Dockerfile'
+//                     label 'windows&&docker'
+//                   }
+//             }
             agent {
-              dockerfile {
-                    filename 'ci\\docker\\windows\\Dockerfile'
-                    label 'windows&&docker'
-                  }
-            }
-            options{
-                timeout(3)
+                  dockerfile {
+                        filename 'ci/docker/linux/Dockerfile'
+                        label 'linux&&docker'
+                      }
             }
             steps {
-                bat "python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
+                timeout(3){
+                    sh "python setup.py bdist_wheel sdist -d dist --format zip bdist_wheel -d dist"
+                }
+//                 bat "python.exe setup.py bdist_wheel sdist -d ${WORKSPACE}\\dist --format zip bdist_wheel -d ${WORKSPACE}\\dist"
             }
 
             post{
